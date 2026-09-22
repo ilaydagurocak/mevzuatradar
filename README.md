@@ -1,5 +1,7 @@
 # MevzuatRadar
 
+[![tests](https://github.com/ilaydagurocak/mevzuatradar/actions/workflows/ci.yml/badge.svg)](https://github.com/ilaydagurocak/mevzuatradar/actions/workflows/ci.yml)
+
 Türk bankacılık mevzuatındaki değişiklikleri Resmî Gazete'den otomatik olarak bulan, hangi düzenlemenin hangi maddesinin nasıl değiştiğini yapılandırılmış kayıtlara dönüştüren ve bu kayıtları **elle etiket kullanmadan** doğrulayan bir document intelligence sistemi.
 
 ## Problem
@@ -120,6 +122,8 @@ Sentetik örneklerde görünmeyen, ancak gerçek metinlerde sistemin çökmesine
 Geliştirme sırasında iki kez, birim testleri geçtiği halde gerçek veride bir şeyler bozuldu; birinde **tüm kayıtlar sıfırlandı**. Bunu iki yönetmelikte birden çalıştırılan regresyon kontrolü yakaladı; ardından ham HTML'den kayda kadar tüm zinciri sınayan uçtan uca bir test eklendi.
 
 ## Kurulum
+
+Her `push` sonrasında GitHub Actions testleri ve örnek set üzerindeki çıkarım doğruluğunu (F1 = 1.0) otomatik kontrol eder.
 
 ```bash
 conda create -n mevzuatradar python=3.11 -y

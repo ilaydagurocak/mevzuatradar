@@ -1,0 +1,35 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python ${{ matrix.python-version }} kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Bağımlılıkları kur
+        run: pip install -e ".[dev]"
+
+      - name: Testler
+        run: pytest -q
+
+      - name: Örnek set üzerinde çıkarım doğruluğu (regresyon)
+        run: |
+          mevzuatradar extract data/samples/ornek_degisiklik.txt --out /tmp/preds.jsonl
+          mevzuatradar evaluate --pred /tmp/preds.jsonl --gold data/samples/ornek_degisiklik.gold.jsonl | tee /tmp/eval.txt
+          grep -q "F1 1.0" /tmp/eval.txt || { echo "Örnek sette F1 düştü"; exit 1; }
