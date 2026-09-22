@@ -7,3 +7,5 @@ data/processed/
 !data/samples/*.jsonl
 parsed*.json
 verify_*.txt
+.DS_Store
+.vscode/
