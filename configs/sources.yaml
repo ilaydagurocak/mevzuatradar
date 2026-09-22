@@ -1,0 +1,64 @@
+sources:
+- id: bddk_bilgi_sistemleri
+  name: Bankaların Bilgi Sistemleri ve Elektronik Bankacılık Hizmetleri Hakkında Yönetmelik
+  issuer: BDDK
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=34360&MevzuatTertip=5
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2020/06/20200620-1.htm
+- id: bddk_kart
+  name: Banka Kartları ve Kredi Kartları Hakkında Yönetmelik
+  issuer: BDDK
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=11180&MevzuatTertip=5
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2008/12/20081221-1.htm
+  - https://www.resmigazete.gov.tr/eskiler/2009/08/20090801-3-2.htm
+  - https://www.resmigazete.gov.tr/eskiler/2010/12/20101217-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2011/01/20110114-10.htm
+  - https://www.resmigazete.gov.tr/eskiler/2011/10/20111019-11.htm
+  - https://www.resmigazete.gov.tr/eskiler/2013/10/20131008M1-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2013/11/20131121-2.htm
+  - https://www.resmigazete.gov.tr/eskiler/2013/12/20131231-2.htm
+  - https://www.resmigazete.gov.tr/eskiler/2014/05/20140513-5.htm
+  - https://www.resmigazete.gov.tr/eskiler/2015/04/20150402-6.htm
+  - https://www.resmigazete.gov.tr/eskiler/2016/09/20160927-1.htm
+  - https://www.resmigazete.gov.tr/eskiler/2018/07/20180706-14.htm
+  - https://www.resmigazete.gov.tr/eskiler/2019/01/20190111-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2020/03/20200328-13.htm
+  - https://www.resmigazete.gov.tr/eskiler/2020/09/20200925-12.htm
+- id: bddk_kredi_islemleri
+  name: Bankaların Kredi İşlemlerine İlişkin Yönetmelik (2023)
+  issuer: BDDK
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=40520&MevzuatTertip=5
+  amendments: []
+- id: bddk_uzaktan_kimlik
+  name: Bankalarca Kullanılacak Uzaktan Kimlik Tespit Yöntemlerine ve Elektronik Ortamda Sözleşme İlişkisinin Kurulmasına İlişkin Yönetmelik
+  issuer: BDDK
+  url: ''
+  amendments: []
+- id: masak_tedbirler
+  name: Suç Gelirlerinin Aklanmasının ve Terörün Finansmanının Önlenmesine Dair Tedbirler Hakkında Yönetmelik
+  issuer: MASAK
+  url: ''
+  amendments: []
+- id: tcmb_odeme_hizmetleri
+  name: Ödeme Hizmetleri ve Elektronik Para İhracı ile Ödeme Hizmet Sağlayıcıları Hakkında Yönetmelik
+  issuer: TCMB
+  url: ''
+  amendments: []
+- id: masak_uyum
+  name: Suç Gelirlerinin Aklanmasının ve Terörün Finansmanının Önlenmesine İlişkin Yükümlülüklere Uyum Programı Hakkında Yönetmelik
+  issuer: MASAK
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=12426&MevzuatTertip=5
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2008/09/20080926-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2010/01/20100102-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2014/06/20140611-6.htm
+  - https://www.resmigazete.gov.tr/eskiler/2016/03/20160318-11.htm
+  - https://www.resmigazete.gov.tr/eskiler/2021/02/20210226-2.htm
+  - https://www.resmigazete.gov.tr/eskiler/2023/05/20230527-1.htm
+  - https://www.resmigazete.gov.tr/eskiler/2024/12/20241225-4.htm
+  - https://www.resmigazete.gov.tr/eskiler/2025/08/20250822-1.htm
+crawl:
+  delay_seconds: 3
+  user_agent: MevzuatRadar/0.1 (egitim amacli portfoy projesi)
+  timeout_seconds: 30

@@ -1,0 +1,22 @@
+[project]
+name = "mevzuatradar"
+version = "0.1.0"
+description = "Bankacılık mevzuatı değişiklik takibi ve uyum asistanı"
+requires-python = ">=3.10"
+dependencies = ["requests", "truststore", "beautifulsoup4", "pdfplumber", "pyyaml"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+mevzuatradar = "mevzuatradar.cli:main"
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
