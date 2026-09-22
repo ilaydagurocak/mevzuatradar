@@ -65,3 +65,29 @@ def test_tek_alintida_iki_fikra():
         "B\nMADDE 1 – 1/1/2020 tarihli ve 1 sayılı Resmî Gazete’de yayımlanan Örnek Yönetmeliğin 18 inci maddesinin "
         "ikinci fıkrası aşağıdaki şekilde değiştirilmiştir.\n“(2) Yeni iki.\n(3) Yeni üç.”")]
     assert [r.status for _, r in verify(recs, kons)] == ["uyumlu"]
+
+
+def test_alt_bent_ve_cumle_dogrulama():
+    kons = ("Y\nMADDE 13 – (1) Teminatlar;\nb) İkinci grup;\n10) On,\nc) Üçüncü grup;\n2) Yeni iki,\n"
+            "MADDE 59 – (1) Bir.\n(5) Yeni birinci cümle. Eski ikinci cümle.\n")
+    recs = [a.to_dict() for a in extract_amendments(
+        "B\nMADDE 1 – 1/1/2020 tarihli ve 1 sayılı Resmî Gazete’de yayımlanan Örnek Yönetmeliğin 13 üncü maddesinin "
+        "birinci fıkrasının (c) bendinin (2) numaralı alt bendi aşağıdaki şekilde değiştirilmiştir.\n“2) Yeni iki,”\n"
+        "MADDE 2 – Aynı Yönetmeliğin 59 uncu maddesinin beşinci fıkrasının birinci cümlesi aşağıdaki şekilde "
+        "değiştirilmiştir.\n“Yeni birinci cümle.”")]
+    assert [r.status for _, r in verify(recs, kons)] == ["uyumlu", "uyumlu"]
+
+
+def test_tek_alintida_iki_bent():
+    kons = "Y\nMADDE 11 – (1) Bir.\n(4) Belgeler;\nf) Yeni ef (EK-4),\ng) Yeni ge (EK-5),\n"
+    recs = [a.to_dict() for a in extract_amendments(
+        "B\nMADDE 6 – 1/1/2020 tarihli ve 1 sayılı Resmî Gazete’de yayımlanan Örnek Yönetmeliğin 11 inci maddesinin "
+        "dördüncü fıkrasının (f) ve (g) bentleri aşağıdaki şekilde değiştirilmiştir.\n“f) Yeni ef (EK-4),\ng) Yeni ge (EK-5),”")]
+    assert [(r["location"]["bent"], res.status) for r, res in verify(recs, kons)] == [("f", "uyumlu"), ("g", "uyumlu")]
+
+
+def test_ek_ici_degisiklik_kapsam_disi():
+    recs = [a.to_dict() for a in extract_amendments(
+        "B\nMADDE 2 – 1/1/2020 tarihli ve 1 sayılı Resmî Gazete’de yayımlanan Örnek Yönetmeliğin ekinde yer alan "
+        "Ek-1’in 40 ıncı fıkrası aşağıdaki şekilde değiştirilmiştir.\n“40. Yeni.”")]
+    assert [r.status for _, r in verify(recs, KONSOLIDE)] == ["kontrol_edilemedi"]

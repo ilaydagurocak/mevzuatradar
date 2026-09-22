@@ -65,13 +65,14 @@ def keyword_from_name(name: str) -> str:
     return re.sub(r"\s+(Yönetmelik|Tebliğ|Yönetmeliği|Tebliği)$", "", name)
 
 
-def find_links(html: str, base_url: str, keyword: str) -> list[tuple[str, str]]:
+def find_links(html: str, base_url: str, keyword: str | list[str]) -> list[tuple[str, str]]:
+    """Başlığında düzenlemenin adı (veya eski adlarından biri) ve 'değişiklik' geçen bağlantılar."""
     soup = BeautifulSoup(html, "html.parser")
-    key = _norm(keyword)
+    keys = [_norm(k) for k in ([keyword] if isinstance(keyword, str) else keyword)]
     hits = []
     for a in soup.find_all("a", href=True):
         text = _norm(a.get_text(" "))
-        if key in text and "DEĞİŞİKLİK" in text:
+        if any(key in text for key in keys) and "DEĞİŞİKLİK" in text:
             hits.append((a.get_text(" ").strip(" –-\n\t"), urljoin(base_url, a["href"])))
     return hits
 
@@ -87,16 +88,23 @@ def collect_refs(sources: list[str]) -> list[RGRef]:
     return sorted({r for s in sources if (r := parse_ref(s))})
 
 
-def find_amendment_urls(session: requests.Session, refs: list[RGRef], keyword: str,
-                        delay: float = 3, timeout: int = 30) -> list[tuple[RGRef, list[tuple[str, str]], str | None]]:
-    """Her referans için (ref, bulunan bağlantılar, hata mesajı) döndürür."""
-    results = []
-    for i, ref in enumerate(refs):
-        if i:
+def find_amendment_urls(session: requests.Session, refs: list[RGRef], keyword: str | list[str],
+                        delay: float = 3, timeout: int = 30,
+                        robots=None) -> list[tuple[RGRef, list[tuple[str, str]], str | None]]:
+    """Her referans için (ref, bulunan bağlantılar, hata mesajı) döndürür.
+    robots verilirse (RobotsChecker), izin verilmeyen sayfalar istenmez."""
+    from mevzuatradar.collect.polite import get_with_retry
+
+    results, requested = [], 0
+    for ref in refs:
+        if robots is not None and not robots.allowed(ref.index_url):
+            results.append((ref, [], "robots.txt bu sayfaya izin vermiyor"))
+            continue
+        if requested:
             time.sleep(delay)
+        requested += 1
         try:
-            resp = session.get(ref.index_url, timeout=timeout)
-            resp.raise_for_status()
+            resp = get_with_retry(session, ref.index_url, timeout=timeout)
             results.append((ref, find_links(_decode(resp), ref.index_url, keyword), None))
         except requests.RequestException as exc:
             results.append((ref, [], str(exc)))

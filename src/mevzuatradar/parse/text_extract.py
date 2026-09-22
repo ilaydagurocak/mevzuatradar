@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from bs4 import BeautifulSoup
+from bs4.element import CData, Comment, Declaration, Doctype, ProcessingInstruction
 
 # Satır sonu yalnızca bu blok elementlerinden sonra eklenir. Word'den dışa aktarılan
 # HTML'de bir paragraf çok sayıda <span>'e bölündüğü için, her metin parçasını ayrı
@@ -28,6 +29,7 @@ class ExtractedText:
 
 def _tidy(text: str) -> str:
     text = text.replace("\xa0", " ")
+    text = re.sub(r"[\u200b\u200c\u200d\u2060\ufeff\u00ad]", "", text)  # görünmez karakterler
     text = re.sub(r"[ \t]+", " ", text)
     return re.sub(r"\n\s*\n\s*\n+", "\n\n", text).strip()
 
@@ -36,6 +38,15 @@ def from_html(html: str) -> str:
     soup = BeautifulSoup(html, "html.parser")
     for tag in soup(["script", "style", "nav", "header", "footer"]):
         tag.decompose()
+    # Yorumlar (Word'ün "[if gte vml 1]" gibi koşullu blokları dahil) ve bildirimler metin değildir.
+    # Aşağıdaki boşluk temizleme döngüsü bunları sıradan metne çevirmesin diye ÖNCE atılır.
+    for node in list(soup.find_all(string=lambda t: isinstance(t, (Comment, Declaration, Doctype,
+                                                                    ProcessingInstruction, CData)))):
+        node.extract()
+    # Üst simge dipnot işaretleri (<sup>1</sup>) metne karışmasın.
+    for sup in soup.find_all("sup"):
+        if re.fullmatch(r"\s*\(?\d{1,3}\)?\s*", sup.get_text()):
+            sup.decompose()
     # HTML kaynağındaki satır kaydırmaları anlamsızdır: metin içindeki tüm boşlukları tekle.
     for s in list(soup.find_all(string=True)):
         s.replace_with(re.sub(r"\s+", " ", str(s)))

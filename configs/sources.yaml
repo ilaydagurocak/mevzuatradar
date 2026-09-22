@@ -31,20 +31,28 @@ sources:
   url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=40520&MevzuatTertip=5
   amendments: []
 - id: bddk_uzaktan_kimlik
-  name: Bankalarca Kullanılacak Uzaktan Kimlik Tespit Yöntemlerine ve Elektronik Ortamda Sözleşme İlişkisinin Kurulmasına İlişkin Yönetmelik
+  name: Bankalarca Kullanılacak Uzaktan Kimlik Tespiti Yöntemlerine ve Elektronik Ortamda Sözleşme İlişkisinin Kurulmasına İlişkin Yönetmelik
   issuer: BDDK
-  url: ''
-  amendments: []
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=38568&MevzuatTertip=5
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2023/05/20230525-1.htm
 - id: masak_tedbirler
   name: Suç Gelirlerinin Aklanmasının ve Terörün Finansmanının Önlenmesine Dair Tedbirler Hakkında Yönetmelik
   issuer: MASAK
   url: ''
   amendments: []
 - id: tcmb_odeme_hizmetleri
-  name: Ödeme Hizmetleri ve Elektronik Para İhracı ile Ödeme Hizmet Sağlayıcıları Hakkında Yönetmelik
+  name: Ödeme Hizmetleri ve Elektronik Para İhracı ile Ödeme Hizmeti Sağlayıcıları Hakkında Yönetmelik
   issuer: TCMB
-  url: ''
-  amendments: []
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=39080&MevzuatTertip=5
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2022/11/20221125-4.htm
+  - https://www.resmigazete.gov.tr/eskiler/2023/06/20230627-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2023/10/20231007-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2025/03/20250328-1.htm
+  - https://www.resmigazete.gov.tr/eskiler/2025/12/20251231-4.htm
+  - https://www.resmigazete.gov.tr/eskiler/2026/03/20260319-2.htm
+  - https://www.resmigazete.gov.tr/eskiler/2026/09/20260904-1.htm
 - id: masak_uyum
   name: Suç Gelirlerinin Aklanmasının ve Terörün Finansmanının Önlenmesine İlişkin Yükümlülüklere Uyum Programı Hakkında Yönetmelik
   issuer: MASAK
@@ -58,6 +66,110 @@ sources:
   - https://www.resmigazete.gov.tr/eskiler/2023/05/20230527-1.htm
   - https://www.resmigazete.gov.tr/eskiler/2024/12/20241225-4.htm
   - https://www.resmigazete.gov.tr/eskiler/2025/08/20250822-1.htm
+- id: bddk_kredi_siniflandirma
+  name: Kredilerin Sınıflandırılması ve Bunlar İçin Ayrılacak Karşılıklara İlişkin Usul ve Esaslar Hakkında Yönetmelik
+  issuer: BDDK
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=22599&MevzuatTertip=5
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2016/12/20161214-4.htm
+  - https://www.resmigazete.gov.tr/eskiler/2018/03/20180327-2.htm
+  - https://www.resmigazete.gov.tr/eskiler/2018/08/20180815-5.htm
+  - https://www.resmigazete.gov.tr/eskiler/2018/10/20181018-1.htm
+  - https://www.resmigazete.gov.tr/eskiler/2019/11/20191127-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2021/07/20210706-12.htm
+  - https://www.resmigazete.gov.tr/eskiler/2022/05/20220524-8.htm
+- id: bddk_ic_sistemler
+  name: Bankaların İç Sistemleri ve İçsel Sermaye Yeterliliği Değerlendirme Süreci Hakkında Yönetmelik
+  issuer: BDDK
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=19864&MevzuatTertip=5
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2015/10/20151023-6.htm
+  - https://www.resmigazete.gov.tr/eskiler/2016/01/20160120-1.htm
+  - https://www.resmigazete.gov.tr/eskiler/2017/03/20170304-5.htm
+- id: bddk_sermaye_yeterliligi
+  name: Bankaların Sermaye Yeterliliğinin Ölçülmesine ve Değerlendirilmesine İlişkin Yönetmelik
+  issuer: BDDK
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=21192&MevzuatTertip=5
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2016/01/20160120-4.htm
+  - https://www.resmigazete.gov.tr/eskiler/2016/09/20160927-6.htm
+  - https://www.resmigazete.gov.tr/eskiler/2016/12/20161209-1.htm
+  - https://www.resmigazete.gov.tr/eskiler/2018/03/20180314-4.htm
+  - https://www.resmigazete.gov.tr/eskiler/2021/06/20210608-5.htm
+- id: bddk_muhasebe
+  name: Bankaların Muhasebe Uygulamalarına ve Belgelerin Saklanmasına İlişkin Usul ve Esaslar Hakkında Yönetmelik
+  issuer: BDDK
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=10747&MevzuatTertip=5
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2013/12/20131231-6.htm
+  - https://www.resmigazete.gov.tr/eskiler/2015/10/20151023-7.htm
+  - https://www.resmigazete.gov.tr/eskiler/2019/04/20190402-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2019/08/20190801-1.htm
+- id: bddk_destek_hizmeti
+  name: Bankaların Destek Hizmeti Almalarına İlişkin Yönetmelik
+  issuer: BDDK
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=15481&MevzuatTertip=5
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2013/01/20130129-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2017/03/20170304-4.htm
+  - https://www.resmigazete.gov.tr/eskiler/2020/12/20201211-4.htm
+  - https://www.resmigazete.gov.tr/eskiler/2022/11/20221108-7.htm
+- id: bddk_likidite
+  name: Bankaların Likidite Karşılama Oranı Hesaplamasına İlişkin Yönetmelik
+  issuer: BDDK
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=19498&MevzuatTertip=5
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2015/08/20150820-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2016/01/20160120-2.htm
+  - https://www.resmigazete.gov.tr/eskiler/2017/02/20170228-8.htm
+  - https://www.resmigazete.gov.tr/eskiler/2017/07/20170713-4.htm
+  - https://www.resmigazete.gov.tr/eskiler/2022/02/20220204-4.htm
+- id: bddk_finansal_kiralama
+  name: Finansal Kiralama, Faktoring ve Finansman Şirketlerinin Kuruluş ve Faaliyet Esasları Hakkında Yönetmelik
+  issuer: BDDK
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=18312&MevzuatTertip=5
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2013/12/20131231-4.htm
+  - https://www.resmigazete.gov.tr/eskiler/2015/04/20150402-9.htm
+  - https://www.resmigazete.gov.tr/eskiler/2015/06/20150626-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2016/06/20160602-1.htm
+  - https://www.resmigazete.gov.tr/eskiler/2016/09/20160927-4.htm
+  - https://www.resmigazete.gov.tr/eskiler/2017/10/20171021-6.htm
+  - https://www.resmigazete.gov.tr/eskiler/2018/08/20180815-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2018/11/20181127-16.htm
+  - https://www.resmigazete.gov.tr/eskiler/2019/01/20190125-12.htm
+  - https://www.resmigazete.gov.tr/eskiler/2019/02/20190210-5.htm
+  - https://www.resmigazete.gov.tr/eskiler/2019/02/20190226-9.htm
+  - https://www.resmigazete.gov.tr/eskiler/2020/01/20200114-8.htm
+  - https://www.resmigazete.gov.tr/eskiler/2025/08/20250827-7.htm
+- id: tcmb_mutabakat_faaliyet
+  name: Ödeme ve Menkul Kıymet Mutabakat Sistemlerinin Faaliyetleri Hakkında Yönetmelik
+  issuer: TCMB
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=19825&MevzuatTertip=5
+  amendments: []
+- id: tcmb_mutabakat_gozetim
+  name: Ödeme ve Menkul Kıymet Mutabakat Sistemlerinin Gözetimi Hakkında Yönetmelik
+  issuer: TCMB
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=19827&MevzuatTertip=5
+  amendments: []
+- id: bddk_fk_muhasebe
+  name: Finansal Kiralama, Faktoring, Finansman ve Tasarruf Finansman Şirketlerinin Muhasebe Uygulamaları ile Finansal Tabloları Hakkında Yönetmelik
+  issuer: BDDK
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=19152&MevzuatTertip=5
+  former_names:
+  - Finansal Kiralama, Faktoring ve Finansman Şirketlerinin Muhasebe Uygulamaları İle Finansal Tabloları Hakkında Yönetmelik
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2014/02/20140207-15.htm
+  - https://www.resmigazete.gov.tr/eskiler/2016/01/20160108-2.htm
+  - https://www.resmigazete.gov.tr/eskiler/2016/09/20160927-5.htm
+  - https://www.resmigazete.gov.tr/eskiler/2016/12/20161214-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2017/08/20170817-10.htm
+  - https://www.resmigazete.gov.tr/eskiler/2017/10/20171021-7.htm
+  - https://www.resmigazete.gov.tr/eskiler/2018/05/20180502-4.htm
+  - https://www.resmigazete.gov.tr/eskiler/2019/08/20190801-2.htm
+  - https://www.resmigazete.gov.tr/eskiler/2019/11/20191127-2.htm
+  - https://www.resmigazete.gov.tr/eskiler/2021/06/20210629-9.htm
+  - https://www.resmigazete.gov.tr/eskiler/2022/05/20220524-7.htm
 crawl:
   delay_seconds: 3
   user_agent: MevzuatRadar/0.1 (egitim amacli portfoy projesi)

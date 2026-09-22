@@ -30,3 +30,16 @@ def test_icindekiler_sayfasinda_baglanti_bulma():
     assert kw == "Banka Kartları ve Kredi Kartları Hakkında"
     links = find_links(html, "https://www.resmigazete.gov.tr/eskiler/2020/09/20200925.htm", kw)
     assert [u for _, u in links] == ["https://www.resmigazete.gov.tr/eskiler/2020/09/20200925-5.htm"]
+
+
+def test_eski_adla_yayimlanan_degisiklik_de_bulunur():
+    html = """<a href="20190101-3.htm">Finansal Kiralama, Faktoring ve Finansman Şirketlerinin Muhasebe Uygulamaları
+    İle Finansal Tabloları Hakkında Yönetmelikte Değişiklik Yapılmasına Dair Yönetmelik</a>"""
+    guncel = keyword_from_name("Finansal Kiralama, Faktoring, Finansman ve Tasarruf Finansman Şirketlerinin Muhasebe "
+                               "Uygulamaları ile Finansal Tabloları Hakkında Yönetmelik")
+    eski = keyword_from_name("Finansal Kiralama, Faktoring ve Finansman Şirketlerinin Muhasebe Uygulamaları İle "
+                             "Finansal Tabloları Hakkında Yönetmelik")
+    base = "https://www.resmigazete.gov.tr/eskiler/2019/01/20190101.htm"
+    assert find_links(html, base, guncel) == []                    # yalnızca güncel adla: kaçar
+    assert [u for _, u in find_links(html, base, [guncel, eski])] == [
+        "https://www.resmigazete.gov.tr/eskiler/2019/01/20190101-3.htm"]

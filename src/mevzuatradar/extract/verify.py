@@ -24,7 +24,7 @@ from mevzuatradar.parse.structure import Document, Madde, parse_structure
 
 
 def _norm(text: str | None) -> str:
-    text = (text or "").replace("“", "").replace("”", "").replace("\xa0", " ")
+    text = (text or "").replace("“", "").replace("”", "").replace('"', "").replace("\xa0", " ")
     text = re.sub(r"[–—‐‑]", "-", text)  # uzun/kısa tire farkları anlam taşımaz
     return re.sub(r"\s+", " ", text).strip()
 
@@ -62,6 +62,10 @@ def _find_target(doc: Document, loc: dict):
         unit = next((b for f in fikralar for b in f.bentler if b.letter == loc["bent"]), None)
         if unit is None:
             return None, f"madde {key} bent {loc['bent']} bulunamadı"
+    if loc.get("alt_bent") is not None and loc.get("bent"):
+        unit = next((a for a in unit.alt_bentler if a.num == loc["alt_bent"]), None)
+        if unit is None:
+            return None, f"madde {key} bent {loc['bent']} alt bent {loc['alt_bent']} bulunamadı"
     return unit, ""
 
 
@@ -78,9 +82,25 @@ def _unit_text(unit) -> str:
     return _norm(" ".join(p for p in parts if p))
 
 
+def _pick_item(text: str, marker: str, key: str) -> str:
+    """Tek alıntıda birden çok bent/alt bent varsa ('f) ...\ng) ...' veya 'f) ..., g) ...'),
+    hedef işaretine ait parçayı döndürür; tek parça varsa metni olduğu gibi bırakır."""
+    pat = re.compile(rf"(?:^|(?<=\n)|(?<=,\s))({marker})\)\s")
+    hits = list(pat.finditer(text))
+    if len(hits) < 2:
+        return text
+    for k, h in enumerate(hits):
+        if h.group(1) == key:
+            end = hits[k + 1].start() if k + 1 < len(hits) else len(text)
+            return text[h.start():end].strip()
+    return text
+
+
 def verify_record(rec: dict, doc: Document) -> VerifyResult:
     op = rec["operation"]
     loc = rec.get("location") or {}
+    if loc.get("madde_type") == "ek_belge":
+        return VerifyResult("kontrol_edilemedi", "ek içi değişiklik (form/tablo/ek metni); kapsam dışı")
 
     if op == "BASLIK_DEGISTIR" or (op == "BIRIM_DEGISTIR" and rec.get("unit") == "baslik"):
         target, err = _find_target(doc, {**loc, "fikra": None, "bent": None})
@@ -109,7 +129,7 @@ def verify_record(rec: dict, doc: Document) -> VerifyResult:
         target, err = _find_target(doc, {**loc, "fikra": None, "bent": None})
         if target is None:
             return VerifyResult("hedef_bulunamadi", err)
-        probe, actual = _norm(new)[:150], _madde_text(target)
+        probe, actual = _norm(new)[:150].rstrip(".,;: "), _madde_text(target)
         if probe and probe in actual:
             return VerifyResult("uyumlu", "eklenen metin hedef maddede geçiyor", probe, actual)
         return VerifyResult("uyumsuz", "eklenen metin hedef maddede bulunamadı", probe, actual)
@@ -127,6 +147,15 @@ def verify_record(rec: dict, doc: Document) -> VerifyResult:
         return VerifyResult("uyumlu" if ok else "uyumsuz",
                             "madde metni birebir aynı" if ok else "madde metni farklı", expected, actual)
 
+    if rec.get("unit") == "cumle" and op in ("BIRIM_DEGISTIR", "BIRIM_EKLE"):
+        target, err = _find_target(doc, {**loc, "alt_bent": None})
+        if target is None:
+            return VerifyResult("hedef_bulunamadi", err)
+        expected, actual = _norm(rec.get("new_text")).rstrip(".,;: "), _unit_text(target)
+        if expected and expected in actual:
+            return VerifyResult("uyumlu", "yeni cümle(ler) hedef metinde geçiyor", expected, actual)
+        return VerifyResult("uyumsuz", "yeni cümle(ler) hedef metinde bulunamadı", expected, actual)
+
     if op == "BIRIM_DEGISTIR" and rec.get("unit") == "fikra":
         # Tek alıntı birden fazla fıkra içerebilir: "(2) ... \n(3) ..." -> 2. ve 3. fıkrayla karşılaştır.
         nums = [int(n) for n in re.findall(r"(?m)^\s*\((\d+)\)\s", rec.get("new_text") or "")]
@@ -143,11 +172,16 @@ def verify_record(rec: dict, doc: Document) -> VerifyResult:
             return VerifyResult("uyumlu" if ok else "uyumsuz",
                                 f"fıkralar {nums} birebir aynı" if ok else f"fıkralar {nums} farklı", expected, actual)
 
-    if op == "BIRIM_DEGISTIR" and rec.get("unit") in ("fikra", "bent"):
+    if op == "BIRIM_DEGISTIR" and rec.get("unit") in ("fikra", "bent", "alt_bent"):
         target, err = _find_target(doc, loc)
         if target is None:
             return VerifyResult("hedef_bulunamadi", err)
-        expected = _norm(re.sub(r"^(\(\d+\)|[a-zçğıöşü]\))\s*", "", rec.get("new_text") or ""))
+        new_text = rec.get("new_text") or ""
+        if rec.get("unit") == "bent" and loc.get("bent"):
+            new_text = _pick_item(new_text, r"[a-zçğıöşü]{1,3}", loc["bent"])
+        elif rec.get("unit") == "alt_bent" and loc.get("alt_bent") is not None:
+            new_text = _pick_item(new_text, r"\d+", str(loc["alt_bent"]))
+        expected = _norm(re.sub(r"^(\(\d+\)|[a-zçğıöşü]{1,3}\)|\d+\))\s*", "", new_text))
         actual = _unit_text(target)
         ok = expected == actual
         return VerifyResult("uyumlu" if ok else "uyumsuz",
@@ -163,6 +197,15 @@ def verify_record(rec: dict, doc: Document) -> VerifyResult:
             return VerifyResult("uyumlu", "yeni ibare hedef metinde geçiyor", new, actual)
         return VerifyResult("uyumsuz", "yeni ibare hedef metinde bulunamadı", new, actual)
 
+    if op == "IBARE_KALDIR":
+        target, err = _find_target(doc, loc)
+        if target is None:
+            return VerifyResult("hedef_bulunamadi", err)
+        old_txt, actual = _norm(rec.get("old_text")), _unit_text(target)
+        if old_txt and old_txt not in actual:
+            return VerifyResult("uyumlu", "kaldırılan ibare hedef metinde artık yok", old_txt, actual)
+        return VerifyResult("uyumsuz", "kaldırılan ibare hedef metinde hâlâ geçiyor", old_txt, actual)
+
     if op == "BIRIM_KALDIR":
         target, err = _find_target(doc, loc)
         if target is None:
@@ -173,6 +216,8 @@ def verify_record(rec: dict, doc: Document) -> VerifyResult:
             return VerifyResult("uyumlu", "hedef mülga olarak işaretli")
         return VerifyResult("uyumsuz", "hedef hâlâ yürürlükte görünüyor")
 
+    if op in ("EK_EKLE", "EK_DEGISTIR"):
+        return VerifyResult("kontrol_edilemedi", "ekler (form/tablo) konsolide metinde yer almıyor; kapsam dışı")
     return VerifyResult("kontrol_edilemedi", f"{op} için kontrol henüz yok")
 
 

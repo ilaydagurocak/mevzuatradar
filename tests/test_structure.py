@@ -104,3 +104,48 @@ def test_madde_satirinda_tek_basina_dipnot_ve_not_sonrasi_dipnot():
     f7 = d.get("26").fikralar[1]
     assert f7.text == "Mal veya hizmet."
     assert {a.type for a in f7.annotations} == {"Değişik", "Dipnot"}
+
+
+def test_baslik_ile_birlikte_degisik_notu():
+    d = parse_structure("Y\nUyum görevlisi\nMADDE 16 – (Başlığı ile Birlikte Değişik:RG-26/2/2021-31407)(2)\n"
+                        "(1) Yükümlüler görevli atar.\n")
+    m = d.get("16")
+    assert m.title == "Uyum görevlisi" and m.text == ""
+    assert ("Değişik", "RG-26/2/2021-31407") in [(a.type, a.source) for a in m.annotations]
+    assert m.fikralar[0].text == "Yükümlüler görevli atar."
+
+
+def test_cumle_ortasindaki_tekil_duz_tirnak_belgeyi_yutmaz():
+    text = ('Y\nMADDE 1 – (1) Bir "ibare geçer.\n'
+            'MADDE 2 – (1) İki.\n'
+            'MADDE 3 – Aynı Yönetmeliğin 5 inci maddesi aşağıdaki şekilde değiştirilmiştir.\n'
+            '"MADDE 5 – (1) Yeni\n(2) devam."\n'
+            'MADDE 4 – (1) Dört.\n')
+    d = parse_structure(text)
+    assert [m.key for m in d.maddeler] == ["1", "2", "3", "4"]
+    assert "MADDE 5" in d.get("3").raw_text and "(2) devam" in d.get("3").raw_text
+
+
+def test_not_sonrasi_art_arda_iki_dipnot():
+    d = parse_structure("Y\nMADDE 13 – (1) Bir.\nf) Son bent.\n"
+                        "(2) (Ek:RG-25/12/2024-32763)(4)(5) Finansal kuruluşlar.\n")
+    f2 = d.get("13").fikralar[1]
+    assert f2.num == 2 and f2.text == "Finansal kuruluşlar."
+    assert [a.source for a in f2.annotations if a.type == "Dipnot"] == ["dipnot:4", "dipnot:5"]
+
+
+def test_uzun_baslik_ve_cok_kelimeli_not():
+    uzun = "Posta ve Telgraf Teşkilatı Anonim Şirketi, bankalar ve Bankanın hissedar olduğu sistem işleticisi niteliğindeki kuruluş"
+    d = parse_structure(f"Y\n{uzun}\nMADDE 83 – (1) Metin (Değişik üçüncü ve dördüncü cümle:RG-28/3/2025-32855) devam.\n")
+    m = d.get("83")
+    assert m.title == uzun
+    assert m.fikralar[0].text == "Metin devam."
+    assert m.fikralar[0].annotations[0].source == "RG-28/3/2025-32855"
+
+
+def test_cok_harfli_bentler():
+    text = ("Y\nTanımlar\nMADDE 3 – (1) Bu Yönetmelikte geçen;\nz) Zet,\naa) Çift a,\nss) Organını,\n"
+            "zz) Dijital cüzdan,\naaa) Kartlı sistem kuruluşu,\nifade eder.\n")
+    f = parse_structure(text).get("3").fikralar[0]
+    assert [b.letter for b in f.bentler] == ["z", "aa", "ss", "zz", "aaa"]
+    assert f.bentler[2].text == "Organını,"

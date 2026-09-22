@@ -23,10 +23,13 @@ MADDE_RE = re.compile(
 )
 BOLUM_RE = re.compile(r"^(?P<ord>[A-ZÇĞİÖŞÜ ]+?)\s+(?P<level>BÖLÜM|KISIM)$")
 FIKRA_RE = re.compile(r"^\((?P<num>\d+)\)\s*(?P<rest>.*)$")
-BENT_RE = re.compile(r"^(?P<letter>[a-zçğıöşü])\)\s*(?P<rest>.*)$")
+# Bent işaretleri: a) ... z), sonra aynı harfin tekrarı: aa) ... zz), aaa) ...
+BENT_RE = re.compile(r"^(?P<letter>(?P<l>[a-zçğıöşü])(?P=l){0,2})\)\s*(?P<rest>.*)$")
 ALTBENT_RE = re.compile(r"^(?P<num>\d+)\)\s*(?P<rest>.*)$")
 ANNOTATION_RE = re.compile(
-    r"\((?P<type>Değişik|Ek|Mülga|İptal)(?:\s+[a-zçğıöşü]+)?\s*:\s*(?P<src>[^)]*)\)"
+    # "(Değişik:RG-...)", "(Ek ibare:RG-...)", "(Başlığı ile Birlikte Değişik:RG-...)"
+    # "(Değişik üçüncü ve dördüncü cümle:RG-...)" gibi türden sonra birkaç kelime de gelebilir
+    r"\((?:[A-ZÇĞİÖŞÜa-zçğıöşü]+\s+){0,3}?(?P<type>Değişik|Ek|Mülga|İptal)(?:\s+[a-zçğıöşü]+){0,4}\s*:\s*(?P<src>[^)]*)\)"
 )
 # Dipnot tanımı: "(3) 21/12/2008 tarihli ve 27087 sayılı Resmî Gazete’de yayımlanan Yönetmeliğin
 # 2 nci maddesiyle ...". "maddesiyle" şartı, tarihle başlayan gerçek fıkralarla karışmayı önler.
@@ -116,11 +119,11 @@ def _append(target, text: str) -> None:
 
 
 def _strip_leading_footnote(text: str, target_anns: list[Annotation]) -> str:
-    """Satır başındaki '(k)' dipnot referansını ayırır (fıkra numarasından SONRA gelir)."""
-    m = LEADING_NUM_RE.match(text)
-    if m:
+    """Satır başındaki '(k)' dipnot referans(lar)ını ayırır (fıkra numarasından SONRA gelir)."""
+    # Birden fazla dipnot art arda gelebilir: "(4)(5) Metin" -> "Metin"
+    while (m := LEADING_NUM_RE.match(text)):
         target_anns.append(Annotation("Dipnot", f"dipnot:{m['num']}"))
-        return m["rest"]
+        text = m["rest"]
     return text
 
 
@@ -149,15 +152,26 @@ def parse_structure(text: str) -> Document:
     pending_title: tuple[str, list[Annotation]] | None = None
     madde = fikra = bent = altbent = None
     quote_depth = 0
+    straight_open = False
 
     for i, raw in enumerate(lines):
         line = raw.strip()
         if not line:
             continue
 
-        # 1) Alıntı blokları ("“...”"): yapı olarak yorumlanmaz, maddenin ham metnine eklenir.
-        is_quoted = quote_depth > 0 or line.startswith("“")
+        # 1) Alıntı blokları: yapı olarak yorumlanmaz, maddenin ham metnine eklenir.
+        #    Türkçe tırnak (“ ”) derinlikle izlenir. Düz tırnak (") açılış/kapanışı aynı karakter
+        #    olduğundan daha temkinli davranılır: alıntı YALNIZCA satır başındaki " ile açılır ve
+        #    " ile biten satırda kapanır. Cümle ortasındaki tekil " işaretleri durumu etkilemez.
+        if straight_open and not (quote_depth > 0) and MADDE_RE.match(line):
+            straight_open = False  # güvenlik: kapanmamış düz tırnak tüm belgeyi yutmasın
+        starts_straight = line.startswith('"')
+        is_quoted = quote_depth > 0 or straight_open or line.startswith("“") or starts_straight
         quote_depth = max(0, quote_depth + line.count("“") - line.count("”"))
+        if starts_straight and not straight_open:
+            straight_open = not (len(line) > 1 and line.endswith('"'))
+        elif straight_open and line.endswith('"'):
+            straight_open = False
         if is_quoted:
             if madde is not None:
                 madde.raw_text += "\n" + line
@@ -261,7 +275,7 @@ def parse_structure(text: str) -> Document:
         #    Uzunluk, değişiklik notları çıkarıldıktan SONRA ölçülür.
         clean_title, title_anns = _split_annotations(line)
         nxt = _next_nonblank(lines, i)
-        if (len(clean_title) <= 80 and not clean_title.endswith((".", ",", ";", ":"))
+        if (len(clean_title) <= 250 and not clean_title.endswith((".", ",", ";", ":"))
                 and nxt and MADDE_RE.match(nxt)):
             pending_title = (clean_title, title_anns)
             if madde is not None:  # başlık satırını önceki maddenin ham metninden çıkar

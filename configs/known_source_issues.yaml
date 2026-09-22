@@ -1,0 +1,45 @@
+# Bilinen kaynak tutarsızlıkları
+#
+# Doğrulamanın başarısız olduğu, ancak hatanın sistemde DEĞİL kaynak metinde olduğu
+# elle incelenip bağımsız kanıtla teyit edilmiş durumlar. Bir kayıt burada listelense bile
+# etiket YALNIZCA doğrulama gerçekten başarısız olduğunda uygulanır; kaynak düzeltilirse kayıt
+# kendiliğinden "uyumlu" olur ve rapor bu girdinin artık gerekmediğini bildirir.
+issues:
+  - id: kredi-gecici2-mulga-islenmemis
+    source: bddk_kredi_siniflandirma
+    amendment_url: https://www.resmigazete.gov.tr/eskiler/2016/12/20161214-4.htm
+    amending_article: "1"
+    operation: BIRIM_KALDIR
+    location: {madde_type: gecici, madde: "2"}
+    description: >-
+      14/12/2016 tarihli ve 29918 sayılı Resmî Gazete'de yayımlanan değişiklik yönetmeliğinin
+      1. maddesi geçici 2. maddeyi yürürlükten kaldırıyor. mevzuat.gov.tr konsolide metninde
+      (HTML) madde "(Mülga:...)" notu olmadan tam metniyle yer alıyor; aynı değişiklik
+      yönetmeliğinin 23. maddeye etkisi ise metne işlenmiş.
+    evidence:
+      - kaynak: Değişiklik yönetmeliğinin kendisi (Resmî Gazete)
+        url: https://www.resmigazete.gov.tr/eskiler/2016/12/20161214-4.htm
+      - kaynak: Lexpera konsolide metni (geçici 2. maddeyi "Mülga madde" olarak işaretliyor)
+        url: https://www.lexpera.com.tr/mevzuat/yonetmelikler/kredilerin-siniflandirilmasi-ve-bunlar-icin-ayrilacak-karsiliklara-iliskin-usul-ve-esaslar-hakkinda
+    checked: 2026-09-20
+    note: mevzuat.gov.tr PDF sürümü ayrıca kontrol edilmedi.
+  - id: sermaye-madde5-2018-islenmemis
+    source: bddk_sermaye_yeterliligi
+    amendment_url: https://www.resmigazete.gov.tr/eskiler/2018/03/20180314-4.htm
+    amending_article: "1"
+    operation: BIRIM_DEGISTIR
+    location: {madde: "5"}
+    description: >-
+      14/3/2018 tarihli ve 30360 sayılı Resmî Gazete'deki değişiklik yönetmeliğinin 1. maddesi,
+      5. maddenin birinci ve ikinci fıkralarını 22/6/2016 tarihli ve 29750 sayılı Kredilerin
+      Sınıflandırılması Yönetmeliğine atıf yapacak şekilde değiştiriyor. mevzuat.gov.tr konsolide
+      metninde fıkralar hâlâ 2016'da yürürlükten kalkan 1/11/2006 tarihli ve 26333 sayılı
+      yönetmeliğe atıf yapıyor, metinde 29750'ye hiç atıf yok ve fıkra notu yalnızca
+      RG-27/9/2016-29840 değişikliğini gösteriyor.
+    evidence:
+      - kaynak: Değişiklik yönetmeliğinin kendisi (Resmî Gazete)
+        url: https://www.resmigazete.gov.tr/eskiler/2018/03/20180314-4.htm
+      - kaynak: Değişiklik metninin yeniden yayımı (Alomaliye)
+        url: https://www.alomaliye.com/2018/03/14/bankalarin-sermaye-yeterliliginin-olculmesi/
+    checked: 2026-09-21
+    note: Aynı değişikliğin 34. maddeye etkisi ayrıca incelenmedi.

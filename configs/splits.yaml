@@ -1,0 +1,22 @@
+# Model veri seti bölmeleri — YÖNETMELİK BAZINDA.
+# Aynı yönetmelikten örnekler iki bölmede birden bulunmamalı; aksi halde model ezber yapar.
+# "test" bölmesindeki yönetmeliklerin hatalarına karşılaştırma bitene kadar BAKILMAZ ve
+# kurallar onlara göre düzeltilmez; aksi halde test, genelleme ölçüsü olmaktan çıkar.
+train:
+- bddk_kart
+- masak_uyum
+- bddk_bilgi_sistemleri
+- bddk_kredi_siniflandirma
+- bddk_ic_sistemler
+- bddk_sermaye_yeterliligi
+- bddk_uzaktan_kimlik
+- bddk_muhasebe
+- bddk_destek_hizmeti
+- bddk_likidite
+dev:
+- tcmb_odeme_hizmetleri
+test:
+- bddk_finansal_kiralama
+- tcmb_mutabakat_faaliyet
+- tcmb_mutabakat_gozetim
+- bddk_fk_muhasebe
