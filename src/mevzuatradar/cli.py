@@ -13,6 +13,7 @@
   mevzuatradar find-amendments --all --write
   mevzuatradar export-seq2seq
   mevzuatradar evaluate-model --pred data/ml/preds_dev.jsonl --split dev
+  mevzuatradar export-llm --split test --shots 10
 """
 from __future__ import annotations
 
@@ -249,6 +250,17 @@ def _evaluate_model(args):
                   f"{c.get('hedef_bulunamadi', 0):>10}{c.get('kontrol_edilemedi', 0):>10}{oran:>8}")
 
 
+def _export_llm(args):
+    from mevzuatradar.ml.prompt import export_prompts
+
+    yol, n = export_prompts(args.split, args.shots, args.data_dir)
+    import json as _json
+    ilk = _json.loads(open(yol, encoding="utf-8").readline())
+    karakter = sum(len(m["content"]) for m in ilk["messages"])
+    print(f"{n} istem yazıldı: {yol}")
+    print(f"İstem başına yaklaşık {karakter} karakter (~{karakter // 3} token), {args.shots} örnek içeriyor.")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="mevzuatradar")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -280,6 +292,8 @@ def main(argv=None):
     em = sub.add_parser("evaluate-model"); em.add_argument("--pred", required=True)
     em.add_argument("--split", default="dev"); em.add_argument("--data-dir", default="data/ml")
     em.add_argument("--raw-dir", default="data/raw")
+    el = sub.add_parser("export-llm"); el.add_argument("--split", default="dev")
+    el.add_argument("--shots", type=int, default=10); el.add_argument("--data-dir", default="data/ml")
     bd = sub.add_parser("build-dataset"); bd.add_argument("--config", default="configs/sources.yaml")
     bd.add_argument("--splits", default="configs/splits.yaml"); bd.add_argument("--raw-dir", default="data/raw")
     bd.add_argument("--out-dir", default="data/ml")
@@ -331,6 +345,8 @@ def main(argv=None):
         _add_source(args)
     elif args.cmd == "export-seq2seq":
         _export_seq2seq(args)
+    elif args.cmd == "export-llm":
+        _export_llm(args)
     elif args.cmd == "evaluate-model":
         _evaluate_model(args)
     elif args.cmd == "find-amendments":
