@@ -126,11 +126,29 @@ karşılaştırmak sıralama farklarına ve eklere duyarlıdır):
 Uygulanamayan kayıtlar eklerle (form/tablo) ilgilidir; ekler düzenleme metninde yer almaz.
 Kalan madde farkları resmi metnin değişiklik notlarından ve tipografiden kaynaklanır.
 
+**Tarihe göre sorgu.** Sürüm zinciri, "bu madde şu tarihte nasıldı?" sorusunu cevaplar:
+
+```bash
+mevzuatradar madde-at --source bddk_kart --madde 26 --date 01/01/2012
+mevzuatradar madde-at --source bddk_kart --madde 26 --date 01/01/2019
+```
+
+Örneğin kart yönetmeliğinin 26. maddesi 2012'de altı fıkralıdır ve bağımsız denetim için o dönemin
+yönetmeliğine atıf yapar; 2019'da taksitlendirme sınırlarını düzenleyen yedinci ve sekizinci fıkralar
+eklenmiş, denetim ise Türk Ticaret Kanunu'na bağlanmıştır. Aynı sorgu API'de de vardır:
+`GET /version?source=bddk_kart&madde=26&date=01/01/2019`.
+
 Bu denetim, sessizce yanlış sonuç üreten beş hatayı ortaya çıkardı ve hepsi testlerle sabitlendi:
 bent değiştirilirken fıkranın kapanış cümlesinin silinmesi, olmayan bir fıkranın kaldırılması
 istendiğinde maddenin tamamının silinmesi, madde numarasının tekrarlanması, eklenen fıkranın
 sonraki bölümün başlığından sonraya düşmesi ve birinci fıkra MADDE satırının devamındayken
 maddenin kaybolması.
+
+Altıncı hata tarih sorgusu eklendikten sonra çıktı: bir değişiklik "aynı maddeye aşağıdaki fıkralar
+eklenmiştir" dediğinde, o numaralı fıkralar zaten varsa metinde mükerrer fıkralar oluşuyordu. Bir
+maddede aynı numaralı iki fıkra olamayacağı için bu durum artık ekleme değil değiştirme sayılıyor.
+Hatayı ne testler ne doğrulama yakalamıştı; yeni bir kullanım biçimi (tarihe göre okuma) ortaya
+çıkardı.
 
 ### 6. Üzerine yazılmış değişikliklerin bağımsız doğrulanması
 
@@ -254,6 +272,7 @@ mevzuatradar serve          # http://127.0.0.1:8000
 | `GET /` | Tarayıcıdan denemek için demo sayfası: metni yapıştır, kayıtları tabloda gör |
 | `POST /extract` | Değişiklik metni → yapılandırılmış kayıtlar |
 | `POST /verify` | Metin + konsolide metin → kayıtlar ve doğrulama sonuçları |
+| `GET /version` | Bir düzenlemenin (ya da tek maddesinin) verilen tarihteki metni |
 | `GET /health` | Servis durumu (konteyner sağlık kontrolü) |
 | `GET /docs` | FastAPI'nin otomatik ürettiği etkileşimli API dokümantasyonu |
 
@@ -310,7 +329,7 @@ src/mevzuatradar/
   extract/supersede.py     Üzerine yazılmış değişikliklerin bağımsız kanıtla doğrulanması
   api/main.py              FastAPI servisi: /extract, /verify, /health, demo sayfası
   cli.py                   Komut satırı arayüzü
-tests/                     131 test: birimler, gerçek değişiklik cümleleri, uçtan uca zincir ve değerlendirme aracı
+tests/                     136 test: birimler, gerçek değişiklik cümleleri, uçtan uca zincir ve değerlendirme aracı
 ```
 
 ## Bilinen sınırlamalar
@@ -336,7 +355,7 @@ tests/                     131 test: birimler, gerçek değişiklik cümleleri, 
 - [ ] Daha fazla eğitim verisiyle model; BERTurk ile NER + ilişki çıkarımı
 - [x] Değişiklikleri sırayla uygulayan sürüm zinciri ve madde bazında denetim
 - [x] Günlük Resmî Gazete taraması (izleyici) ve zamanlanmış çalıştırma
-- [ ] Sürümleri tarihe göre sorgulayan API ucu ("bu madde 1/1/2019'da nasıldı?")
+- [x] Sürümleri tarihe göre sorgulama (CLI ve API)
 - [ ] İzleyici bulgularının e-posta/Slack bildirimi
 - [ ] Taranmış eski Resmî Gazete sayıları için layout analizi + VLM
 - [ ] Belirli bir tarihteki geçerli metne göre cevap veren uyum asistanı (RAG)
