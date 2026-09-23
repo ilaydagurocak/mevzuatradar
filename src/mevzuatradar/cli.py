@@ -42,7 +42,6 @@ def _find_amendments(args):
     from pathlib import Path
 
     import requests
-    import truststore
     import yaml
 
     from mevzuatradar.collect.rg_finder import (collect_refs, consolidated_annotation_sources,
@@ -63,11 +62,12 @@ def _find_amendments(args):
     print(f"{len(refs)} değişiklik tarihi bulundu. Aranan başlık(lar): "
           + " | ".join(f"'{k} ... Değişiklik'" for k in keyword))
 
-    truststore.inject_into_ssl()
+    from mevzuatradar.collect.polite import RobotsChecker, use_system_certs
+
+    use_system_certs()
     crawl = cfg.get("crawl", {})
     session = requests.Session()
     session.headers["User-Agent"] = crawl.get("user_agent", "MevzuatRadar/0.1")
-    from mevzuatradar.collect.polite import RobotsChecker
     robots = RobotsChecker(session, session.headers["User-Agent"], crawl.get("timeout_seconds", 30))
     results = find_amendment_urls(session, refs, keyword, crawl.get("delay_seconds", 3),
                                   crawl.get("timeout_seconds", 30), robots=robots)
@@ -285,10 +285,9 @@ def _find_original(args):
     from pathlib import Path as _Path
 
     import requests
-    import truststore
     import yaml
 
-    from mevzuatradar.collect.polite import RobotsChecker
+    from mevzuatradar.collect.polite import RobotsChecker, use_system_certs
     from mevzuatradar.collect.rg_finder import (find_original_link, keyword_from_name, original_ref, _decode)
     from mevzuatradar.parse.text_extract import extract_text
 
@@ -308,7 +307,7 @@ def _find_original(args):
         return
     print(f"İlk yayım: {ref.label}")
 
-    truststore.inject_into_ssl()
+    use_system_certs()
     crawl = cfg.get("crawl", {})
     session = requests.Session()
     session.headers["User-Agent"] = crawl.get("user_agent", "MevzuatRadar/0.1")
@@ -422,10 +421,9 @@ def _watch(args):
     from pathlib import Path
 
     import requests
-    import truststore
     import yaml
 
-    from mevzuatradar.collect.polite import RobotsChecker
+    from mevzuatradar.collect.polite import RobotsChecker, use_system_certs
     from mevzuatradar.collect.rg_finder import RGRef
     from mevzuatradar.collect.watch import load_state, save_state, scan_day, write_report
 
@@ -433,7 +431,7 @@ def _watch(args):
     kaynaklar = [s for s in cfg["sources"] if s.get("name")]
     gun = datetime.strptime(args.date, "%d/%m/%Y").date() if args.date else date.today()
 
-    truststore.inject_into_ssl()
+    use_system_certs()
     crawl = cfg.get("crawl", {})
     session = requests.Session()
     session.headers["User-Agent"] = crawl.get("user_agent", "MevzuatRadar/0.1")
@@ -442,7 +440,7 @@ def _watch(args):
     gecikme = crawl.get("delay_seconds", 3)
 
     gorulen = load_state(args.state)
-    yeni_bulgular, taranan = [], 0
+    yeni_bulgular, taranan, hatali = [], 0, 0
     for k in range(args.days):
         d = gun - timedelta(days=k)
         for mukerrer in range(0, args.mukerrer + 1):
@@ -453,9 +451,11 @@ def _watch(args):
             try:
                 hits, hata = scan_day(session, ref, kaynaklar, args.raw_dir, timeout, robots)
             except Exception as exc:
+                hatali += 1
                 print(f"[hata] {ref.label}: {type(exc).__name__}: {exc}")
                 continue
             if hata:
+                hatali += 1
                 print(f"[atlandı] {ref.label}: {hata}")
                 continue
             for h in hits:
@@ -489,6 +489,11 @@ def _watch(args):
         print(f"\nRapor: {args.report}")
     if not args.all:
         save_state(args.state, gorulen)
+    if taranan and hatali == taranan:
+        # Hiçbir sayfa okunamadıysa "değişiklik yok" sonucu yanıltıcıdır: sessiz başarısızlığı önle.
+        print("\n[uyarı] Hiçbir sayfa okunamadı; sonuç güvenilir değil.")
+        return 1
+    return 0
 
 
 def main(argv=None):
@@ -606,7 +611,7 @@ def main(argv=None):
     elif args.cmd == "explain-superseded":
         _explain_superseded(args)
     elif args.cmd == "watch":
-        _watch(args)
+        return _watch(args)
     elif args.cmd == "evaluate-model":
         _evaluate_model(args)
     elif args.cmd == "find-amendments":
@@ -636,4 +641,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -62,3 +62,14 @@ def get_with_retry(session: requests.Session, url: str, timeout: int = 30,
                 raise
             time.sleep(backoff * (attempt + 1))
     raise requests.RequestException(f"{url}: yeniden denemeler tükendi")
+
+
+def use_system_certs() -> bool:
+    """Sistemin sertifika deposunu kullan (kurumsal ağlarda TLS hatalarını önler).
+    truststore kurulu değilse sessizce normal sertifikalarla devam edilir."""
+    try:
+        import truststore
+    except ImportError:
+        return False
+    truststore.inject_into_ssl()
+    return True

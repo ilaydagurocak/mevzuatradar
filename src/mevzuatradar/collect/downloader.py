@@ -16,10 +16,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
-import truststore
 import yaml
 
-from mevzuatradar.collect.polite import RobotsChecker, get_with_retry
+from mevzuatradar.collect.polite import RobotsChecker, use_system_certs, get_with_retry
 
 EXT_BY_TYPE = {"application/pdf": ".pdf", "text/html": ".html", "text/plain": ".txt"}
 
@@ -69,7 +68,7 @@ def run(config_path: str, raw_dir: str = "data/raw", refresh: bool = False) -> l
     # tamamlayamıyor ("unable to get local issuer certificate"). truststore,
     # doğrulamayı işletim sisteminin güven deposuna (macOS Keychain vb.) devreder.
     # Import anında global yan etki olmasın diye burada, indirme başlarken çağrılır.
-    truststore.inject_into_ssl()
+    use_system_certs()
 
     cfg = yaml.safe_load(Path(config_path).read_text(encoding="utf-8"))
     crawl = cfg.get("crawl", {})

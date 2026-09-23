@@ -43,6 +43,9 @@ jobs:
 
       - name: Resmî Gazete taraması
         id: tara
+        # pipefail olmadan 'tee' başarılı olduğu için komutun hatası gizlenir ve iş
+        # sessizce "başarılı" görünür.
+        shell: bash -euo pipefail {0}
         run: |
           mevzuatradar watch \
             --days "${{ github.event.inputs.days || 3 }}" \

@@ -80,7 +80,7 @@ def test_manifestteki_adresler_yeniden_istenmez(tmp_path, monkeypatch):
                                                 "amendments": ["https://a.tr/deg0", "https://a.tr/deg1"]}],
                                    "crawl": {"delay_seconds": 0}}), encoding="utf-8")
     istenen = []
-    monkeypatch.setattr(downloader.truststore, "inject_into_ssl", lambda: None)
+    monkeypatch.setattr(downloader, "use_system_certs", lambda: False)
     monkeypatch.setattr(downloader.RobotsChecker, "allowed", lambda self, url: True)
     monkeypatch.setattr(downloader, "download_one", lambda s, url, *a, **k: istenen.append(url))
     downloader.run(str(cfg), str(raw))

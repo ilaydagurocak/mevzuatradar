@@ -3,7 +3,7 @@ name = "mevzuatradar"
 version = "0.1.0"
 description = "Bankacılık mevzuatı değişiklik takibi ve uyum asistanı"
 requires-python = ">=3.10"
-dependencies = ["requests", "beautifulsoup4", "pdfplumber", "pyyaml"]
+dependencies = ["requests", "truststore", "beautifulsoup4", "pdfplumber", "pyyaml"]
 
 [project.optional-dependencies]
 dev = ["pytest", "fastapi", "uvicorn[standard]", "httpx", "httpx2"]
