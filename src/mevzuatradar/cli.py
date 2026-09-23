@@ -369,6 +369,51 @@ def _build_versions(args):
         print(f"Sürümler yazıldı: {d}")
 
 
+def _explain_superseded(args):
+    from mevzuatradar.extract.pipeline import process_source
+    from mevzuatradar.extract.supersede import explain
+
+    run = process_source(args.source, args.raw_dir)
+    if run is None:
+        print(f"{args.source}: veri yok")
+        return
+    import glob
+    import os
+
+    from mevzuatradar.collect.rg_finder import collect_refs, consolidated_annotation_sources
+    from mevzuatradar.extract.supersede import explain_with_notes
+    from mevzuatradar.parse.text_extract import extract_text
+
+    sonradan = [k for k, (_, _, res) in enumerate(run.results) if res.status == "sonradan_degisti"]
+    kanitlar = explain(run.results)
+    kons = glob.glob(f"{args.raw_dir}/{args.source}/konsolide_*")
+    not_kanitlari = {}
+    if kons:
+        yol = max(kons, key=os.path.getmtime)
+        refs = collect_refs(consolidated_annotation_sources(yol))
+        etiketler = {i: r.label for i, r in enumerate(refs) if i < len(run.amendment_files)}
+        not_kanitlari = explain_with_notes(run.results, etiketler, extract_text(yol).text)
+    toplam = set(kanitlar) | set(not_kanitlari)
+    print(f"{args.source}: {len(sonradan)} 'sonradan değişti' kaydının {len(toplam)} tanesi doğrulandı "
+          f"({len(kanitlar)} sonraki değişikliğin alıntısıyla, {len(not_kanitlari)} resmi metnin "
+          f"değişiklik notuyla)")
+    if args.verbose:
+        for k in sonradan:
+            i, rec, _ = run.results[k]
+            kanit, notu = kanitlar.get(k), not_kanitlari.get(k)
+            loc = {a: b for a, b in rec["location"].items() if b not in (None, "normal")}
+            yeni = (rec.get("new_text") or "")[:60]
+            if kanit:
+                print(f"  [kanıt] {rec['operation']} {loc} '{yeni}'")
+                print(f"          -> değişiklik {kanit.amendment_index}, madde {kanit.amending_article} "
+                      f"bu ibareyi alıntılıyor: '{(kanit.quoted or '')[:60]}'")
+            elif notu:
+                print(f"  [not]   {rec['operation']} {loc} '{yeni}'")
+                print(f"          -> resmi metin {notu.unit} için {notu.label} notunu taşıyor")
+            else:
+                print(f"  [kanıtsız] {rec['operation']} {loc} '{yeni}'")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="mevzuatradar")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -403,6 +448,8 @@ def main(argv=None):
     em.add_argument("--raw-dir", default="data/raw")
     el = sub.add_parser("export-llm"); el.add_argument("--split", default="dev")
     el.add_argument("--shots", type=int, default=10); el.add_argument("--data-dir", default="data/ml")
+    es2 = sub.add_parser("explain-superseded"); es2.add_argument("--source", required=True)
+    es2.add_argument("--raw-dir", default="data/raw"); es2.add_argument("--verbose", action="store_true")
     bv = sub.add_parser("build-versions"); bv.add_argument("--source", required=True)
     bv.add_argument("--raw-dir", default="data/raw"); bv.add_argument("--out-dir")
     bv.add_argument("--verbose", action="store_true")
@@ -470,6 +517,8 @@ def main(argv=None):
         _find_original(args)
     elif args.cmd == "build-versions":
         _build_versions(args)
+    elif args.cmd == "explain-superseded":
+        _explain_superseded(args)
     elif args.cmd == "evaluate-model":
         _evaluate_model(args)
     elif args.cmd == "find-amendments":

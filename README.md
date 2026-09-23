@@ -107,6 +107,49 @@ Geliştirme setinde (TCMB Ödeme Hizmetleri) sıralama daha da belirgin: kural %
 
 Ekler (form ve tablolar) ile ek içi değişiklikler konsolide metinde yer almadığı için doğrulama kapsamı dışındadır ve tabloda gösterilmemiştir.
 
+### 5. Sürüm zinciri: ilk metinden bugüne
+
+Düzenlemenin **ilk yayımlanan metni** Resmî Gazete'den bulunur (ilk değişiklik yönetmeliğindeki
+"… tarihli ve … sayılı Resmî Gazete'de yayımlanan" atfından), sonra çıkarılan değişiklikler tarih
+sırasıyla metne uygulanır. Böylece her tarihteki metin üretilir.
+
+Bu, projenin en güçlü **kendi kendini denetleme** aracı: bütün değişiklikler uygulandığında resmi
+konsolide metin elde edilmelidir. Sonuç madde madde karşılaştırılır (bütün metni tek parça
+karşılaştırmak sıralama farklarına ve eklere duyarlıdır):
+
+| Yönetmelik | Uygulanan kayıt | Madde bazında birebir aynı |
+|---|---|---|
+| Banka Kartları ve Kredi Kartları | 73 / 74 | 35 / 38 |
+| Bankaların İç Sistemleri | 33 / 34 | 64 / 67 |
+| Finansal Kiralama Kuruluş ve Faaliyet | 29 / 29 | 26 / 30 |
+
+Uygulanamayan kayıtlar eklerle (form/tablo) ilgilidir; ekler düzenleme metninde yer almaz.
+Kalan madde farkları resmi metnin değişiklik notlarından ve tipografiden kaynaklanır.
+
+Bu denetim, sessizce yanlış sonuç üreten beş hatayı ortaya çıkardı ve hepsi testlerle sabitlendi:
+bent değiştirilirken fıkranın kapanış cümlesinin silinmesi, olmayan bir fıkranın kaldırılması
+istendiğinde maddenin tamamının silinmesi, madde numarasının tekrarlanması, eklenen fıkranın
+sonraki bölümün başlığından sonraya düşmesi ve birinci fıkra MADDE satırının devamındayken
+maddenin kaybolması.
+
+### 6. Üzerine yazılmış değişikliklerin bağımsız doğrulanması
+
+Bir değişikliğin etkisi daha sonra başka bir değişiklikle üzerine yazılmışsa bugünkü metinde
+görünmez ("sonradan değişti"). Bu kayıtlar iki bağımsız kanıtla doğrulanır:
+
+1. **Sonraki değişikliğin alıntısı:** sonraki değişiklik, değiştirdiği eski ibareyi metninde
+   alıntılar; o ibare önceki değişikliğin getirdiği metinse, önceki değişiklik kanıtlanmış olur.
+2. **Resmi metnin kendi notu:** konsolide metin her değiştirilen birimin yanına
+   "(Değişik:RG-25/9/2020-31255)" notunu koyar; not, o değişikliğin o birime dokunduğunu
+   resmi kaynağın kendi beyanıyla gösterir.
+
+Dört yönetmelikte "sonradan değişti" kayıtlarının **23/48'i** bu yolla doğrulandı
+(kart 8/20, MASAK 6/9, likidite 8/14, TCMB ödeme 1/5).
+
+Kanıtsız kalanların deseni bilgi verici: aynı birim üst üste birkaç kez değiştirilmişse, resmi
+metin yalnızca **en son** değişikliğin notunu taşır; aradaki değişiklikler bugünkü resmi kaynaktan
+ilke olarak doğrulanamaz.
+
 ### Kaynak tutarsızlığı bulguları
 
 Doğrulama katmanı, resmi konsolide metinde işlenmemiş görünen iki değişikliği kendiliğinden yakaladı:
@@ -230,14 +273,18 @@ src/mevzuatradar/
   extract/amendments.py    Kural tabanlı değişiklik çıkarımı
   extract/verify.py        Konsolide metinle zaman farkındalıklı doğrulama
   extract/evaluate.py      Etiketli sete karşı precision/recall/F1
+  version/apply.py         Değişikliklerin metne uygulanması (sürüm zinciri)
+  version/build.py         İlk metinden bugüne zincir ve madde bazında karşılaştırma
+  extract/supersede.py     Üzerine yazılmış değişikliklerin bağımsız kanıtla doğrulanması
   api/main.py              FastAPI servisi: /extract, /verify, /health, demo sayfası
   cli.py                   Komut satırı arayüzü
-tests/                     92 test: birimler, gerçek değişiklik cümleleri, uçtan uca zincir ve değerlendirme aracı
+tests/                     126 test: birimler, gerçek değişiklik cümleleri, uçtan uca zincir ve değerlendirme aracı
 ```
 
 ## Bilinen sınırlamalar
 
-- **"Sonradan değişti" kayıtları doğrulanmış değildir**, yalnızca hata sayılmaz. Değişiklikleri tarih sırasıyla uygulayıp her ara sürümü üreten versiyonlama bu boşluğu kapatacak.
+- **"Sonradan değişti" kayıtlarının yarısı doğrulanabiliyor** (bkz. bölüm 6). Aynı birim birden çok kez değiştirilmişse aradaki değişiklikler bugünkü resmi kaynaktan doğrulanamaz.
+- **Sürüm zinciri ilk metni gerektirir.** İlk yayım atfı bulunamayan düzenlemelerde (ör. MASAK Uyum Programı) zincir kurulamaz.
 - **Recall doğrudan ölçülmüyor.** Doğrulama bulunan kayıtların doğruluğunu ölçer. Hiç çıkarılamayan değişiklikler ancak dolaylı yoldan görünür: "şüpheli" maddeler (kayıt çıkmayan ama yürürlük/yürütme maddesi olmayan maddeler) ve modelin kuralların boş geçtiği yerde bulduğu değişiklikler.
 - **Kural tabanlı çıkarım kırılgandır.** Görülmemiş verideki ilk ölçümlerin %79–98 arasında değişmesi bunu gösteriyor; her yeni kurum ve dönem yeni kalıplar getirebilir.
 - **Model küçük veriyle eğitildi** (256 örnek, mT5-small) ve test seti küçük (2 yönetmelik, 91 madde); model sonuçlarındaki farklar temkinli yorumlanmalı.
@@ -255,7 +302,8 @@ tests/                     92 test: birimler, gerçek değişiklik cümleleri, u
 - [x] Birkaç örnekle yönlendirilmiş dil modeli (Qwen 7B) ile karşılaştırma ve hibrit
 - [ ] Kayıtları birleştiren (union) hibrit tasarımı; yeni bir test setiyle ölçüm
 - [ ] Daha fazla eğitim verisiyle model; BERTurk ile NER + ilişki çıkarımı
-- [ ] Değişiklikleri sırayla uygulayan madde versiyonlama (her tarihteki geçerli metin)
+- [x] Değişiklikleri sırayla uygulayan sürüm zinciri ve madde bazında denetim
+- [ ] Sürümleri tarihe göre sorgulayan API ucu ("bu madde 1/1/2019'da nasıldı?")
 - [ ] Taranmış eski Resmî Gazete sayıları için layout analizi + VLM
 - [ ] Belirli bir tarihteki geçerli metne göre cevap veren uyum asistanı (RAG)
 - [x] FastAPI servisi (/extract, /verify, demo sayfası) ve Dockerfile
