@@ -62,6 +62,37 @@ def verify_endpoint(req: VerifyRequest) -> dict:
     return {"count": len(cikti), "summary": ozet, "records": cikti}
 
 
+@app.get("/version")
+def version_endpoint(source: str, date: str, madde: str | None = None, raw_dir: str = "data/raw") -> dict:
+    """Bir düzenlemenin (ya da tek bir maddesinin) verilen tarihteki metni.
+
+    Değişiklikler ilk metne tarih sırasıyla uygulanarak üretilir; bu yüzden ham veri (ilk metin ve
+    değişiklikler) yerelde bulunmalıdır.
+    """
+    from datetime import datetime
+
+    from fastapi import HTTPException
+
+    from mevzuatradar.version.build import madde_at, version_at
+
+    try:
+        gun = datetime.strptime(date, "%d/%m/%Y").date()
+    except ValueError:
+        raise HTTPException(422, "Tarih biçimi gg/aa/yyyy olmalı") from None
+    try:
+        if madde:
+            metin, surum = madde_at(source, madde, gun, raw_dir)
+            if metin is None:
+                raise HTTPException(404, f"{date} itibarıyla {madde}. madde yok")
+        else:
+            surum = version_at(source, gun, raw_dir)
+            metin = surum.text
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from None
+    return {"source": source, "date": date, "madde": madde, "version": surum.label,
+            "version_date": surum.date.isoformat() if surum.date else None, "text": metin}
+
+
 DEMO = """<!doctype html><html lang="tr"><head><meta charset="utf-8">
 <title>MevzuatRadar</title><meta name="viewport" content="width=device-width, initial-scale=1">
 <style>

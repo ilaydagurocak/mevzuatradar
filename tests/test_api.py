@@ -60,3 +60,13 @@ def test_eksik_alan_422():
 def test_demo_sayfasi():
     r = client.get("/")
     assert r.status_code == 200 and "MevzuatRadar" in r.text and "/extract" in r.text
+
+
+def test_version_ucu_gecersiz_tarih():
+    r = client.get("/version", params={"source": "x", "date": "2019-01-01"})
+    assert r.status_code == 422 and "gg/aa/yyyy" in r.json()["detail"]
+
+
+def test_version_ucu_bilinmeyen_kaynak():
+    r = client.get("/version", params={"source": "olmayan_kaynak", "date": "01/01/2019", "raw_dir": "/tmp/yok"})
+    assert r.status_code == 404

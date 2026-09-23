@@ -260,6 +260,23 @@ def apply_record(text: str, rec: dict) -> tuple[str, ApplyResult]:
                 return text, ApplyResult("hedef_bulunamadi", sebep)
             return "\n".join(lines[:onceki[1]] + yeni.split("\n") + lines[onceki[1]:]), ApplyResult("uygulandi")
         bas, son = span
+        # Aynı numarada fıkra zaten varsa bu bir EKLEME değil, o fıkranın DEĞİŞTİRİLMESİdir:
+        # bir maddede aynı numaralı iki fıkra olamaz.
+        if unit == "fikra" and (bloklar := _fikra_bloklari(yeni)):
+            kalan, metin = [], text
+            for numara, blok in bloklar:
+                if _fikra_span(metin.split("\n"), _madde_span(metin.split("\n"), str(loc["madde"]),
+                                                               loc.get("madde_type") or "normal"), numara):
+                    metin, alt = apply_record(metin, {**rec, "operation": "BIRIM_DEGISTIR", "new_text": blok,
+                                                      "location": {**loc, "fikra": numara}})
+                    if alt.status != "uygulandi":
+                        return metin, ApplyResult(alt.status, f"fıkra {numara}: {alt.detail}")
+                else:
+                    kalan.append(blok)
+            if not kalan:
+                return metin, ApplyResult("uygulandi")
+            if metin != text:                      # bir kısmı değiştirildi, kalanlar eklenecek
+                return apply_record(metin, {**rec, "new_text": "\n".join(kalan)})
         son = _icerik_sonu(lines, bas, son)
         if (sonra := rec.get("insert_after")):                       # "(d) bendinden sonra gelmek üzere"
             alt = _bent_span(lines, (bas, son), str(sonra)) or _fikra_span(lines, (bas, son), int(sonra)) \

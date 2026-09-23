@@ -266,3 +266,59 @@ def test_fikra_eklemesi_bolum_basliginin_onune_gelir():
     i5 = satirlar.index("(5) Beşinci fıkra.")
     assert satirlar[i5 - 1] == "(4) Dördüncü fıkra."          # maddenin sonuna
     assert satirlar[i5 + 1] == "DÖRDÜNCÜ BÖLÜM"                # bölüm başlığından önce
+
+
+def _zincir_ortami(tmp_path):
+    """İlk metin + iki değişiklik + konsolide metin içeren küçük bir kaynak."""
+    d = tmp_path / "ornek"
+    d.mkdir(parents=True)
+    (d / "orijinal_x.txt").write_text(
+        "ÖRNEK YÖNETMELİK\nSüre\nMADDE 5 – (1) Başvurular otuz gün içinde sonuçlandırılır.\n", encoding="utf-8")
+    (d / "degisiklik00_a.txt").write_text(
+        "DEĞİŞİKLİK\nMADDE 1 – 1/1/2010 tarihli ve 27000 sayılı Resmî Gazete’de yayımlanan Örnek Yönetmeliğin "
+        "5 inci maddesinin birinci fıkrasında yer alan “otuz” ibaresi “altmış” şeklinde değiştirilmiştir.\n",
+        encoding="utf-8")
+    (d / "degisiklik01_b.txt").write_text(
+        "DEĞİŞİKLİK\nMADDE 1 – Aynı Yönetmeliğin 5 inci maddesinin birinci fıkrasında yer alan “altmış” ibaresi "
+        "“doksan” şeklinde değiştirilmiştir.\n", encoding="utf-8")
+    (d / "konsolide_x.txt").write_text(
+        "ÖRNEK YÖNETMELİK\nSüre\nMADDE 5 – (1) (Değişik ibare:RG-1/6/2015-29400) (Değişik ibare:RG-1/3/2020-31000) "
+        "Başvurular doksan gün içinde sonuçlandırılır.\n", encoding="utf-8")
+    return str(tmp_path)
+
+
+def test_tarihe_gore_madde_metni(tmp_path):
+    from datetime import date
+
+    from mevzuatradar.version.build import madde_at
+    raw = _zincir_ortami(tmp_path)
+    # ilk değişiklik 1/6/2015, ikincisi 1/3/2020 (konsolide metnin notlarından okunur)
+    metin, surum = madde_at("ornek", "5", date(2016, 1, 1), raw)
+    assert "altmış gün" in metin and "doksan" not in metin
+    metin, _ = madde_at("ornek", "5", date(2021, 1, 1), raw)
+    assert "doksan gün" in metin
+    metin, _ = madde_at("ornek", "5", date(2014, 1, 1), raw)
+    assert "otuz gün" in metin          # hiçbir değişiklik yürürlüğe girmemişken
+
+
+def test_var_olan_numarali_fikra_eklenmez_degistirilir():
+    # "aynı maddeye aşağıdaki fıkralar eklenmiştir" dese de numara zaten varsa değiştirme yapılır
+    metin = "MADDE 26 – (1) Bir.\n(7) Eski yedi.\n(8) Eski sekiz.\nMADDE 27 – (1) Yirmi yedi.\n"
+    yeni, res = apply_record(metin, {"operation": "BIRIM_EKLE", "unit": "fikra",
+                                     "new_text": "(7) Yeni yedi.\n(8) Yeni sekiz.",
+                                     "location": {"madde": "26"}})
+    assert res.status == "uygulandi"
+    numaralar = [s.strip()[:3] for s in yeni.split("\n") if s.strip().startswith("(")]
+    assert numaralar == ["(7)", "(8)"]                     # tekrar yok
+    assert "Yeni yedi." in yeni and "Eski yedi." not in yeni and "Yeni sekiz." in yeni
+
+
+def test_kismen_var_olan_fikralar_hem_degistirilir_hem_eklenir():
+    metin = "MADDE 26 – (1) Bir.\n(7) Eski yedi.\nMADDE 27 – (1) Yirmi yedi.\n"
+    yeni, res = apply_record(metin, {"operation": "BIRIM_EKLE", "unit": "fikra",
+                                     "new_text": "(7) Yeni yedi.\n(8) Yepyeni sekiz.",
+                                     "location": {"madde": "26"}})
+    assert res.status == "uygulandi"
+    assert "Yeni yedi." in yeni and "Eski yedi." not in yeni
+    satirlar = [s for s in yeni.split("\n") if s.strip()]
+    assert satirlar.index("(8) Yepyeni sekiz.") < satirlar.index("MADDE 27 – (1) Yirmi yedi.")

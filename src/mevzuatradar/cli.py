@@ -496,6 +496,18 @@ def _watch(args):
     return 0
 
 
+def _madde_at(args):
+    from datetime import datetime
+
+    from mevzuatradar.version.build import madde_at
+
+    gun = datetime.strptime(args.date, "%d/%m/%Y").date()
+    metin, surum = madde_at(args.source, args.madde, gun, args.raw_dir)
+    print(f"{args.source} | madde {args.madde} | {gun:%d/%m/%Y} itibarıyla yürürlükteki sürüm: {surum.label}")
+    print()
+    print(metin or "(bu tarihte böyle bir madde yok)")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="mevzuatradar")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -541,6 +553,9 @@ def main(argv=None):
     w.add_argument("--config", default="configs/sources.yaml"); w.add_argument("--raw-dir", default="data/raw")
     es2 = sub.add_parser("explain-superseded"); es2.add_argument("--source", required=True)
     es2.add_argument("--raw-dir", default="data/raw"); es2.add_argument("--verbose", action="store_true")
+    ma = sub.add_parser("madde-at"); ma.add_argument("--source", required=True)
+    ma.add_argument("--madde", required=True); ma.add_argument("--date", required=True, help="gg/aa/yyyy")
+    ma.add_argument("--raw-dir", default="data/raw")
     bv = sub.add_parser("build-versions"); bv.add_argument("--source", required=True)
     bv.add_argument("--raw-dir", default="data/raw"); bv.add_argument("--out-dir")
     bv.add_argument("--verbose", action="store_true")
@@ -608,6 +623,8 @@ def main(argv=None):
         _find_original(args)
     elif args.cmd == "build-versions":
         _build_versions(args)
+    elif args.cmd == "madde-at":
+        _madde_at(args)
     elif args.cmd == "explain-superseded":
         _explain_superseded(args)
     elif args.cmd == "watch":
