@@ -14,6 +14,8 @@
   mevzuatradar export-seq2seq
   mevzuatradar evaluate-model --pred data/ml/preds_dev.jsonl --split dev
   mevzuatradar export-llm --split test --shots 10
+  mevzuatradar watch                      (bugünün Resmî Gazete'sini tarar)
+  mevzuatradar watch --days 7 --all
   mevzuatradar find-original --source bddk_kart --write
   mevzuatradar build-versions --source bddk_kart --verbose
   mevzuatradar serve                      (http://127.0.0.1:8000 demo + /docs)
@@ -414,6 +416,81 @@ def _explain_superseded(args):
                 print(f"  [kanıtsız] {rec['operation']} {loc} '{yeni}'")
 
 
+def _watch(args):
+    import time
+    from datetime import date, datetime, timedelta
+    from pathlib import Path
+
+    import requests
+    import truststore
+    import yaml
+
+    from mevzuatradar.collect.polite import RobotsChecker
+    from mevzuatradar.collect.rg_finder import RGRef
+    from mevzuatradar.collect.watch import load_state, save_state, scan_day, write_report
+
+    cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
+    kaynaklar = [s for s in cfg["sources"] if s.get("name")]
+    gun = datetime.strptime(args.date, "%d/%m/%Y").date() if args.date else date.today()
+
+    truststore.inject_into_ssl()
+    crawl = cfg.get("crawl", {})
+    session = requests.Session()
+    session.headers["User-Agent"] = crawl.get("user_agent", "MevzuatRadar/0.1")
+    timeout = crawl.get("timeout_seconds", 30)
+    robots = RobotsChecker(session, session.headers["User-Agent"], timeout)
+    gecikme = crawl.get("delay_seconds", 3)
+
+    gorulen = load_state(args.state)
+    yeni_bulgular, taranan = [], 0
+    for k in range(args.days):
+        d = gun - timedelta(days=k)
+        for mukerrer in range(0, args.mukerrer + 1):
+            ref = RGRef(d.year, d.month, d.day, sayi="?", mukerrer=mukerrer)
+            if taranan:
+                time.sleep(gecikme)
+            taranan += 1
+            try:
+                hits, hata = scan_day(session, ref, kaynaklar, args.raw_dir, timeout, robots)
+            except Exception as exc:
+                print(f"[hata] {ref.label}: {type(exc).__name__}: {exc}")
+                continue
+            if hata:
+                print(f"[atlandı] {ref.label}: {hata}")
+                continue
+            for h in hits:
+                if h.url in gorulen and not args.all:
+                    continue
+                gorulen.add(h.url)
+                yeni_bulgular.append(h)
+
+    tarih = f"{gun:%d/%m/%Y}" + (f" ve önceki {args.days - 1} gün" if args.days > 1 else "")
+    if not yeni_bulgular:
+        print(f"{tarih}: takip edilen {len(kaynaklar)} düzenlemede yeni değişiklik yok "
+              f"({taranan} sayfa denendi).")
+    for h in yeni_bulgular:
+        print(f"\n>>> {h.source_name}")
+        print(f"    {h.rg_label} | {h.title[:120]}")
+        print(f"    {h.url}")
+        if h.error:
+            print(f"    [hata] {h.error}")
+            continue
+        ozet = ", ".join(f"{k}: {v}" for k, v in sorted(h.statuses.items())) or "doğrulama yapılamadı"
+        print(f"    {h.record_count} değişiklik kaydı | güncel metne göre: {ozet}")
+        for rec in h.records[:args.show]:
+            loc = {k: v for k, v in (rec.get("location") or {}).items() if v not in (None, "normal")}
+            eski, yeni = (rec.get("old_text") or "")[:40], (rec.get("new_text") or "")[:60]
+            print(f"      - {rec['operation']:<15} {loc} "
+                  + (f"'{eski}' -> '{yeni}'" if eski else (f"'{yeni}'" if yeni else "")))
+        if len(h.records) > args.show:
+            print(f"      ... ve {len(h.records) - args.show} kayıt daha")
+    if yeni_bulgular and args.report:
+        write_report(args.report, yeni_bulgular)
+        print(f"\nRapor: {args.report}")
+    if not args.all:
+        save_state(args.state, gorulen)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="mevzuatradar")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -448,6 +525,15 @@ def main(argv=None):
     em.add_argument("--raw-dir", default="data/raw")
     el = sub.add_parser("export-llm"); el.add_argument("--split", default="dev")
     el.add_argument("--shots", type=int, default=10); el.add_argument("--data-dir", default="data/ml")
+    w = sub.add_parser("watch")
+    w.add_argument("--date", help="gg/aa/yyyy (varsayılan: bugün)")
+    w.add_argument("--days", type=int, default=1, help="kaç gün geriye taransın")
+    w.add_argument("--mukerrer", type=int, default=1, help="kaç mükerrer sayı denensin")
+    w.add_argument("--all", action="store_true", help="daha önce bildirilenleri de göster")
+    w.add_argument("--show", type=int, default=5, help="bulgu başına gösterilecek kayıt sayısı")
+    w.add_argument("--state", default="data/watch_state.json")
+    w.add_argument("--report", default="reports/watch.jsonl")
+    w.add_argument("--config", default="configs/sources.yaml"); w.add_argument("--raw-dir", default="data/raw")
     es2 = sub.add_parser("explain-superseded"); es2.add_argument("--source", required=True)
     es2.add_argument("--raw-dir", default="data/raw"); es2.add_argument("--verbose", action="store_true")
     bv = sub.add_parser("build-versions"); bv.add_argument("--source", required=True)
@@ -519,6 +605,8 @@ def main(argv=None):
         _build_versions(args)
     elif args.cmd == "explain-superseded":
         _explain_superseded(args)
+    elif args.cmd == "watch":
+        _watch(args)
     elif args.cmd == "evaluate-model":
         _evaluate_model(args)
     elif args.cmd == "find-amendments":
