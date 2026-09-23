@@ -211,6 +211,37 @@ mevzuatradar extract data/raw/bddk_kart/degisiklik00_*.html
 
 Kaynaklar `configs/sources.yaml` dosyasında tanımlanır.
 
+## İzleme: yeni değişiklikleri yakalama
+
+Sistem yalnızca geçmişi çözümlemez; Resmî Gazete'nin günlük sayısını tarayıp takip edilen
+düzenlemelerdeki yeni değişiklikleri bulur, kayıtları çıkarır ve güncel metinle doğrular.
+
+```bash
+mevzuatradar watch                      # bugünü tara
+mevzuatradar watch --days 7 --all       # son 7 gün, görülenler dahil
+mevzuatradar watch --date 27/08/2025    # belirli bir gün
+```
+
+Örnek çıktı (gerçek bir gün):
+
+```
+>>> Finansal Kiralama, Faktoring ve Finansman Şirketlerinin Kuruluş ve Faaliyet Esasları Hakkında Yönetmelik
+    RG-27/8/2025-32999 | ... Yönetmelikte Değişiklik Yapılmasına Dair Yönetmelik
+    https://www.resmigazete.gov.tr/eskiler/2025/08/20250827-7.htm
+    10 değişiklik kaydı | güncel metne göre: uyumlu: 10
+      - IBARE_EKLE      {'madde': '2', 'fikra': 1} '9,'
+      - BIRIM_EKLE      {'madde': '3', 'fikra': 1} 'ğ) Kredi Kuruluşu: ...'
+      - BASLIK_DEGISTIR {'madde': '6'} 'Şirketlerin yurt içinde ve yurt dışında şube açmaları...'
+```
+
+Bulgular `reports/watch.jsonl` dosyasına yazılır; görülen değişiklikler `data/watch_state.json`
+dosyasında tutulur ve tekrar bildirilmez. Düzenlemenin adı değişmişse eski adlarla da aranır.
+
+**Zamanlanmış çalışma.** `.github/workflows/watch.yml` hafta içi her sabah taramayı çalıştırır ve
+bir değişiklik bulunursa depoda issue açar. CI'da konsolide metinler bulunmadığı için (ham veri
+depoda tutulmaz) doğrulama adımı orada atlanır; bulgu görüldükten sonra doğrulama yerel olarak
+çalıştırılır. Tarama robots.txt'ye uyar ve istekler arasında bekler: günde birkaç sayfa istek.
+
 ## Servis (API)
 
 ```bash
@@ -267,7 +298,8 @@ Servis kural tabanlı motoru kullanır: GPU gerektirmez ve istek başına milisa
 ```
 src/mevzuatradar/
   collect/downloader.py    İndirme, manifest, içerik özetiyle tekrar-güvenli kayıt
-  collect/rg_finder.py     Resmî Gazete'de değişiklik yönetmeliklerini otomatik bulma
+  collect/rg_finder.py     Resmî Gazete'de değişiklik yönetmeliklerini ve ilk yayımı bulma
+  collect/watch.py         Günlük Resmî Gazete taraması (izleyici)
   parse/text_extract.py    HTML/PDF'ten metin; taranmış PDF tespiti
   parse/structure.py       Madde/fıkra/bent ağacı, değişiklik notları ve dipnotlar
   extract/amendments.py    Kural tabanlı değişiklik çıkarımı
@@ -278,7 +310,7 @@ src/mevzuatradar/
   extract/supersede.py     Üzerine yazılmış değişikliklerin bağımsız kanıtla doğrulanması
   api/main.py              FastAPI servisi: /extract, /verify, /health, demo sayfası
   cli.py                   Komut satırı arayüzü
-tests/                     126 test: birimler, gerçek değişiklik cümleleri, uçtan uca zincir ve değerlendirme aracı
+tests/                     131 test: birimler, gerçek değişiklik cümleleri, uçtan uca zincir ve değerlendirme aracı
 ```
 
 ## Bilinen sınırlamalar
@@ -303,7 +335,9 @@ tests/                     126 test: birimler, gerçek değişiklik cümleleri, 
 - [ ] Kayıtları birleştiren (union) hibrit tasarımı; yeni bir test setiyle ölçüm
 - [ ] Daha fazla eğitim verisiyle model; BERTurk ile NER + ilişki çıkarımı
 - [x] Değişiklikleri sırayla uygulayan sürüm zinciri ve madde bazında denetim
+- [x] Günlük Resmî Gazete taraması (izleyici) ve zamanlanmış çalıştırma
 - [ ] Sürümleri tarihe göre sorgulayan API ucu ("bu madde 1/1/2019'da nasıldı?")
+- [ ] İzleyici bulgularının e-posta/Slack bildirimi
 - [ ] Taranmış eski Resmî Gazete sayıları için layout analizi + VLM
 - [ ] Belirli bir tarihteki geçerli metne göre cevap veren uyum asistanı (RAG)
 - [x] FastAPI servisi (/extract, /verify, demo sayfası) ve Dockerfile

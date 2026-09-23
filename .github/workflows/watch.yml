@@ -1,0 +1,81 @@
+name: mevzuat izleme
+
+# Hafta içi her sabah 07:00 (Türkiye saati) Resmî Gazete'yi tarar.
+# Bir değişiklik bulunursa depoda bir issue açar.
+on:
+  schedule:
+    - cron: "0 4 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Taranacak gün (gg/aa/yyyy, boşsa bugün)"
+        required: false
+      days:
+        description: "Kaç gün geriye taransın"
+        required: false
+        default: "3"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Kurulum
+        run: pip install -e .
+
+      # Görülen değişiklikler saklanır ki aynı bulgu her gün tekrar bildirilmesin
+      - name: Durum dosyasını geri yükle
+        uses: actions/cache@v4
+        with:
+          path: data/watch_state.json
+          key: watch-state-${{ github.run_id }}
+          restore-keys: watch-state-
+
+      - name: Resmî Gazete taraması
+        id: tara
+        run: |
+          mevzuatradar watch \
+            --days "${{ github.event.inputs.days || 3 }}" \
+            ${{ github.event.inputs.date && format('--date {0}', github.event.inputs.date) || '' }} \
+            --show 10 | tee watch_output.txt
+          if grep -q "^>>>" watch_output.txt; then
+            echo "bulgu=evet" >> "$GITHUB_OUTPUT"
+          else
+            echo "bulgu=hayir" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bulguyu issue olarak aç
+        if: steps.tara.outputs.bulgu == 'evet'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "Resmî Gazete taramasında takip edilen düzenlemelerde değişiklik bulundu."
+            echo
+            echo '```'
+            cat watch_output.txt
+            echo '```'
+            echo
+            echo "Doğrulamak için (konsolide metinler depoda tutulmadığından CI'da yapılamaz):"
+            echo '```'
+            echo "mevzuatradar download --refresh"
+            echo "mevzuatradar watch --days 7 --all"
+            echo '```'
+          } > issue_body.md
+          gh issue create \
+            --title "Mevzuat değişikliği bulundu ($(date +%d/%m/%Y))" \
+            --body-file issue_body.md \
+            --label "mevzuat-degisikligi" || \
+          gh issue create \
+            --title "Mevzuat değişikliği bulundu ($(date +%d/%m/%Y))" \
+            --body-file issue_body.md
