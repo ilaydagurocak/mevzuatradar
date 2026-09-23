@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 from dataclasses import asdict, dataclass, field
 
-from mevzuatradar.parse.structure import parse_structure
+from mevzuatradar.parse.structure import MADDE_RE, parse_structure
 
 # --- Türkçe sıra sayıları ----------------------------------------------------
 _UNITS = ["bir", "iki", "üç", "dört", "beş", "altı", "yedi", "sekiz", "dokuz"]
@@ -467,6 +467,11 @@ def extract_from_article(article_num: str, text: str, current_reg: str | None) -
 
 
 def extract_amendments(text: str) -> list[Amendment]:
+    # Ayrıştırıcı ilk satırı belge başlığı sayar. Metin doğrudan bir madde ile başlıyorsa
+    # (ör. API'ye tek bir madde yapıştırıldığında) o madde kaybolmasın diye başlık eklenir.
+    ilk = next((l.strip() for l in text.split("\n") if l.strip()), "")
+    if MADDE_RE.match(ilk):
+        text = "BAŞLIK\n" + text
     doc = parse_structure(text)
     out: list[Amendment] = []
     current_reg = None

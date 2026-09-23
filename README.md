@@ -168,6 +168,43 @@ mevzuatradar extract data/raw/bddk_kart/degisiklik00_*.html
 
 Kaynaklar `configs/sources.yaml` dosyasında tanımlanır.
 
+## Servis (API)
+
+```bash
+pip install -e ".[api]"
+mevzuatradar serve          # http://127.0.0.1:8000
+```
+
+| Uç nokta | Açıklama |
+|---|---|
+| `GET /` | Tarayıcıdan denemek için demo sayfası: metni yapıştır, kayıtları tabloda gör |
+| `POST /extract` | Değişiklik metni → yapılandırılmış kayıtlar |
+| `POST /verify` | Metin + konsolide metin → kayıtlar ve doğrulama sonuçları |
+| `GET /health` | Servis durumu (konteyner sağlık kontrolü) |
+| `GET /docs` | FastAPI'nin otomatik ürettiği etkileşimli API dokümantasyonu |
+
+```bash
+curl -s localhost:8000/extract -H "content-type: application/json" -d '{
+  "text": "MADDE 1 – Aynı Yönetmeliğin 5 inci maddesinin ikinci fıkrasında yer alan “Kurum” ibaresi “Kurul” şeklinde değiştirilmiştir."
+}'
+```
+
+```json
+{"count": 1, "records": [{"operation": "IBARE_DEGISTIR", "unit": "ibare", "old_text": "Kurum",
+  "new_text": "Kurul", "location": {"madde": "5", "fikra": 2, "bent": null, "alt_bent": null, "cumle": null}}]}
+```
+
+Konteynerle:
+
+```bash
+docker build -t mevzuatradar .
+docker run -p 8000:8000 mevzuatradar
+```
+
+Servis kural tabanlı motoru kullanır: GPU gerektirmez ve istek başına milisaniyeler sürer. Model tabanlı
+çıkarımı sunmak GPU ve model yükleme maliyeti getireceği için, üretimde ayrı bir çıkarım servisi
+(ör. Triton veya vLLM) arkasında çalıştırılması ve API'nin ona istek atması daha uygun olur.
+
 ### Değişiklik kaydı örneği
 
 ```json
@@ -193,8 +230,9 @@ src/mevzuatradar/
   extract/amendments.py    Kural tabanlı değişiklik çıkarımı
   extract/verify.py        Konsolide metinle zaman farkındalıklı doğrulama
   extract/evaluate.py      Etiketli sete karşı precision/recall/F1
+  api/main.py              FastAPI servisi: /extract, /verify, /health, demo sayfası
   cli.py                   Komut satırı arayüzü
-tests/                     84 test: birimler, gerçek değişiklik cümleleri, uçtan uca zincir ve değerlendirme aracı
+tests/                     92 test: birimler, gerçek değişiklik cümleleri, uçtan uca zincir ve değerlendirme aracı
 ```
 
 ## Bilinen sınırlamalar
@@ -220,7 +258,8 @@ tests/                     84 test: birimler, gerçek değişiklik cümleleri, u
 - [ ] Değişiklikleri sırayla uygulayan madde versiyonlama (her tarihteki geçerli metin)
 - [ ] Taranmış eski Resmî Gazete sayıları için layout analizi + VLM
 - [ ] Belirli bir tarihteki geçerli metne göre cevap veren uyum asistanı (RAG)
-- [ ] FastAPI servis, CI'da `verify-all --min-rate` ile otomatik regresyon doğrulaması
+- [x] FastAPI servisi (/extract, /verify, demo sayfası) ve Dockerfile
+- [ ] CI'da `verify-all --min-rate` ile veri üzerinde otomatik regresyon doğrulaması
 
 ## Veri toplama
 

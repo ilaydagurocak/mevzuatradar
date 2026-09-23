@@ -264,3 +264,13 @@ def test_alintilar_fikra_isaretlerine_gore_dagitilir():
             "“(1) Bir.”\n“(5) Beş.\n(6) Altı.\n(7) Yedi.”")
     recs, _ = extract_from_article("1", text, None)
     assert [(r.location.fikra, r.new_text) for r in recs] == [(1, "(1) Bir."), (5, "(5) Beş."), (6, "(6) Altı."), (7, "(7) Yedi.")]
+
+
+def test_dogrudan_madde_ile_baslayan_metin():
+    from mevzuatradar.extract.amendments import extract_amendments
+    # API'ye tek bir madde yapıştırıldığında ilk satır başlık sanılmamalı
+    metin = ("MADDE 1 – 1/1/2020 tarihli ve 1 sayılı Resmî Gazete’de yayımlanan Örnek Yönetmeliğin 3 üncü "
+             "maddesinin birinci fıkrasında yer alan “Kurum” ibaresi “Kurul” şeklinde değiştirilmiştir.")
+    recs = extract_amendments(metin)
+    assert [(r.operation, r.location.madde, r.old_text, r.new_text) for r in recs] == [
+        ("IBARE_DEGISTIR", "3", "Kurum", "Kurul")]

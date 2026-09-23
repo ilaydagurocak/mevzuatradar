@@ -14,6 +14,7 @@
   mevzuatradar export-seq2seq
   mevzuatradar evaluate-model --pred data/ml/preds_dev.jsonl --split dev
   mevzuatradar export-llm --split test --shots 10
+  mevzuatradar serve                      (http://127.0.0.1:8000 demo + /docs)
 """
 from __future__ import annotations
 
@@ -263,6 +264,16 @@ def _export_llm(args):
     print(f"İstem başına yaklaşık {karakter} karakter (~{karakter // 3} token), {args.shots} örnek içeriyor.")
 
 
+def _serve(args):
+    try:
+        import uvicorn
+    except ImportError:
+        print("Servis için: pip install -e \".[api]\"")
+        return
+    print(f"Demo sayfası: http://{args.host}:{args.port}/   API dokümantasyonu: /docs")
+    uvicorn.run("mevzuatradar.api.main:app", host=args.host, port=args.port, reload=args.reload)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="mevzuatradar")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -297,6 +308,8 @@ def main(argv=None):
     em.add_argument("--raw-dir", default="data/raw")
     el = sub.add_parser("export-llm"); el.add_argument("--split", default="dev")
     el.add_argument("--shots", type=int, default=10); el.add_argument("--data-dir", default="data/ml")
+    sv = sub.add_parser("serve"); sv.add_argument("--host", default="127.0.0.1")
+    sv.add_argument("--port", type=int, default=8000); sv.add_argument("--reload", action="store_true")
     bd = sub.add_parser("build-dataset"); bd.add_argument("--config", default="configs/sources.yaml")
     bd.add_argument("--splits", default="configs/splits.yaml"); bd.add_argument("--raw-dir", default="data/raw")
     bd.add_argument("--out-dir", default="data/ml")
@@ -350,6 +363,8 @@ def main(argv=None):
         _export_seq2seq(args)
     elif args.cmd == "export-llm":
         _export_llm(args)
+    elif args.cmd == "serve":
+        _serve(args)
     elif args.cmd == "evaluate-model":
         _evaluate_model(args)
     elif args.cmd == "find-amendments":
