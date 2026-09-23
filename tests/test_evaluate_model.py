@@ -86,3 +86,19 @@ def test_hibrit_kural_bos_kaldiginda_modeli_kullanir(tmp_path):
                              + "\n" for r in rows), encoding="utf-8")
     v = evaluate(str(preds), "dev", str(ml), raw, snap=True)["verification"]["ornek"]
     assert v["hibrit"]["kayit"] == v["kural"]["kayit"] + 1
+
+
+def test_uclu_hibrit_ikinci_modeli_son_care_olarak_kullanir(tmp_path):
+    raw, ml = _raw(tmp_path), tmp_path / "ml"
+    write_dataset(["ornek"], {"ornek": "dev"}, raw, str(ml))
+    export_seq2seq(str(ml), str(ml))
+    rows = [json.loads(l) for l in open(ml / "seq2seq_dev.jsonl", encoding="utf-8")]
+    dogru = "IBARE_DEGISTIR | madde=3 fikra=1 bent=a | birim=ibare | eski=Kurum | yeni=Kurul"
+    bos = ml / "p1.jsonl"; ikinci = ml / "p2.jsonl"
+    # 1. model hiçbir şey bulmuyor; 2. model kuralın boş geçtiği maddede doğru kayıt buluyor
+    bos.write_text("".join(json.dumps({"id": r["id"], "prediction": "YOK"}) + "\n" for r in rows), encoding="utf-8")
+    ikinci.write_text("".join(json.dumps({"id": r["id"], "prediction": dogru if r["id"].endswith("madde4") else "YOK"})
+                              + "\n" for r in rows), encoding="utf-8")
+    v = evaluate(str(bos), "dev", str(ml), raw, snap=True, pred2_path=str(ikinci))["verification"]["ornek"]
+    assert v["hibrit"]["kayit"] == v["kural"]["kayit"]          # tek model: katkı yok
+    assert v["hibrit3"]["kayit"] == v["kural"]["kayit"] + 1     # ikinci model devreye girdi

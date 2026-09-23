@@ -125,13 +125,37 @@ def _summ(results) -> dict:
     return {"kayit": len(results), **c, "oran": c["uyumlu"] / checkable if checkable else None}
 
 
-def evaluate(pred_path: str, split: str = "dev", data_dir: str = "data/ml", raw_dir: str = "data/raw",
-             snap: bool = False) -> dict:
-    rows = {json.loads(l)["id"]: json.loads(l) for l in open(Path(data_dir) / f"seq2seq_{split}.jsonl", encoding="utf-8")}
-    preds = {}
-    for line in open(pred_path, encoding="utf-8"):
+def _read_preds(path: str) -> dict[str, str]:
+    out = {}
+    for line in open(path, encoding="utf-8"):
         p = json.loads(line)
-        preds[p["id"]] = p.get("prediction", "")
+        out[p["id"]] = p.get("prediction", "")
+    return out
+
+
+def _by_article(ids: list[str], preds: dict, rows: dict, index: dict, n_amd: int, snap: bool) -> list[dict]:
+    """Tahminleri (değişiklik dosyası, madde) -> kayıtlar biçiminde toplar."""
+    out = [defaultdict(list) for _ in range(n_amd)]
+    for rid in ids:
+        _, prefix, madde = rid.split("/")
+        recs, _ = dedupe(parse(preds.get(rid, "")))
+        if snap:
+            snap_to_quotes(recs, rows[rid]["input"])
+        recs = fill_block_text(recs, rows[rid]["quotes"])
+        art = madde.replace("madde", "", 1)
+        for r in recs:
+            r["amending_article"] = art
+        if recs:
+            out[index[prefix]][art].extend(recs)
+    return out
+
+
+def evaluate(pred_path: str, split: str = "dev", data_dir: str = "data/ml", raw_dir: str = "data/raw",
+             snap: bool = False, pred2_path: str | None = None) -> dict:
+    """pred2_path verilirse üçlü hibrit de hesaplanır: kural -> (boşsa) 1. model -> (boşsa) 2. model."""
+    rows = {json.loads(l)["id"]: json.loads(l) for l in open(Path(data_dir) / f"seq2seq_{split}.jsonl", encoding="utf-8")}
+    preds = _read_preds(pred_path)
+    preds2 = _read_preds(pred2_path) if pred2_path else None
 
     # 1) Gümüş etiket uyumu
     tp = n_pred = n_gold = exact = n_trusted = n_dup = 0
@@ -164,16 +188,9 @@ def evaluate(pred_path: str, split: str = "dev", data_dir: str = "data/ml", raw_
         if not amds or not kons:
             continue
         index = {Path(a).name.split("_")[0]: i for i, a in enumerate(amds)}
-        per_amd = [[] for _ in amds]
-        for rid in ids:
-            _, prefix, madde = rid.split("/")
-            recs, _ = dedupe(parse(preds.get(rid, "")))
-            if snap:
-                snap_to_quotes(recs, rows[rid]["input"])
-            recs = fill_block_text(recs, rows[rid]["quotes"])
-            for r in recs:
-                r["amending_article"] = madde.replace("madde", "", 1)
-            per_amd[index[prefix]].extend(recs)
+        model_art = _by_article(ids, preds, rows, index, len(amds), snap)
+        model2_art = _by_article(ids, preds2, rows, index, len(amds), snap) if preds2 else None
+        per_amd = [[r for art in sorted(d) for r in d[art]] for d in model_art]
         kons_text = extract_text(max(kons, key=os.path.getmtime)).text
         model_results = verify_chronological(per_amd, kons_text)
         model_results, _ = apply_known_issues(source, amds, model_results, issues, urls)
@@ -185,17 +202,26 @@ def evaluate(pred_path: str, split: str = "dev", data_dir: str = "data/ml", raw_
         for i, rec, _ in rules.results:
             rule_by_article[(i, str(rec.get("amending_article")))].append(
                 {k: v for k, v in rec.items() if k != "target_regulation"})
-        hybrid = [[] for _ in amds]
-        for i, recs in enumerate(per_amd):
-            by_art = defaultdict(list)
-            for r in recs:
-                by_art[str(r["amending_article"])].append(r)
-            articles = {a for (j, a) in rule_by_article if j == i} | set(by_art)
-            for art in sorted(articles):
-                hybrid[i].extend(rule_by_article.get((i, art)) or by_art.get(art, []))
-        hybrid_results = verify_chronological(hybrid, kons_text)
+        def _hibrit(kaynaklar: list) -> list[list[dict]]:
+            """Her madde için sırayla ilk boş olmayan kaynağın kayıtları."""
+            out = [[] for _ in amds]
+            for i in range(len(amds)):
+                articles = {a for (j, a) in rule_by_article if j == i}
+                for d in kaynaklar:
+                    articles |= set(d[i])
+                for art in sorted(articles):
+                    secim = rule_by_article.get((i, art)) or next(
+                        (d[i][art] for d in kaynaklar if d[i].get(art)), [])
+                    out[i].extend(secim)
+            return out
+
+        hybrid_results = verify_chronological(_hibrit([model_art]), kons_text)
         hybrid_results, _ = apply_known_issues(source, amds, hybrid_results, issues, urls)
         verification[source] = {"kural": _summ(rules.results), "model": _summ(model_results),
                                 "hibrit": _summ(hybrid_results)}
+        if model2_art is not None:
+            uclu = verify_chronological(_hibrit([model_art, model2_art]), kons_text)
+            uclu, _ = apply_known_issues(source, amds, uclu, issues, urls)
+            verification[source]["hibrit3"] = _summ(uclu)
     silver["tekrar_atilan"] = n_dup
     return {"silver": silver, "verification": verification, "missing_predictions": len(set(rows) - set(preds))}

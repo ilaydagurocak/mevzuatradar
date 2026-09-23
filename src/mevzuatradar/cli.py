@@ -230,8 +230,8 @@ def _export_seq2seq(args):
 def _evaluate_model(args):
     from mevzuatradar.ml.evaluate_model import evaluate
 
-    raw = evaluate(args.pred, args.split, args.data_dir, args.raw_dir, snap=False)
-    snapped = evaluate(args.pred, args.split, args.data_dir, args.raw_dir, snap=True)
+    raw = evaluate(args.pred, args.split, args.data_dir, args.raw_dir, snap=False, pred2_path=args.pred2)
+    snapped = evaluate(args.pred, args.split, args.data_dir, args.raw_dir, snap=True, pred2_path=args.pred2)
     for label, res in (("model (ham)", raw), ("model + kopyalama kısıtı", snapped)):
         s = res["silver"]
         print(f"{label:<26} gümüş etiket ({s['ornek']} örnek): tam eşleşme {s['tam_eslesme']:.1%} | "
@@ -244,6 +244,8 @@ def _evaluate_model(args):
         rows = [("kural", raw["verification"][src]["kural"]), ("model (ham)", raw["verification"][src]["model"]),
                 ("model + kısıt", snapped["verification"][src]["model"]),
                 ("hibrit", snapped["verification"][src]["hibrit"])]
+        if "hibrit3" in snapped["verification"][src]:
+            rows.append(("hibrit (2 model)", snapped["verification"][src]["hibrit3"]))
         for name, c in rows:
             oran = f"{c['oran']:.1%}" if c["oran"] is not None else "-"
             print(f"{src:<24}{name:<18}{c['kayit']:>6}{c.get('uyumlu', 0):>8}{c.get('uyumsuz', 0):>9}"
@@ -290,6 +292,7 @@ def main(argv=None):
     es = sub.add_parser("export-seq2seq"); es.add_argument("--in-dir", default="data/ml")
     es.add_argument("--out-dir", default="data/ml")
     em = sub.add_parser("evaluate-model"); em.add_argument("--pred", required=True)
+    em.add_argument("--pred2", help="ikinci model tahminleri; üçlü hibrit için (kural -> 1. model -> 2. model)")
     em.add_argument("--split", default="dev"); em.add_argument("--data-dir", default="data/ml")
     em.add_argument("--raw-dir", default="data/raw")
     el = sub.add_parser("export-llm"); el.add_argument("--split", default="dev")

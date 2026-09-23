@@ -52,21 +52,34 @@ Kural sistemi hiç görmediği yönetmeliklerde **kodda değişiklik yapılmadan
 
 İkinci ölçümdeki düşüş, formül ve tablo içeren teknik yönetmeliklerin kurallar için ne kadar zor olduğunu gösteriyor. Üçüncü ölçümdeki yükseliş ise aradaki hata analizlerinde yapılan düzeltmelerin (dipnotlar, çok harfli bentler, eşanlamlı kalıplar, ekler) genelleştiğini gösteriyor. Test yönetmeliklerinin hatalarına karşılaştırma bitene kadar hiç bakılmadı.
 
-### 2. Kural sistemi ile makine öğrenmesi modelinin karşılaştırması
+### 2. Üç yaklaşımın karşılaştırması: kurallar, eğitilmiş model, dil modeli
 
-Kural sistemi + doğrulama ile üretilen **gümüş etiketlerle** (256 eğitim örneği) bir **mT5-small** modeli eğitildi. Model, alıntı metinlerini kopyalamak yerine işlemi ve konumu üretir; uzun alıntılar sonradan yerlerine konur. Üç sistem, hiçbirinin görmediği test setinde **aynı doğrulama hattıyla** ölçüldü:
+Aynı görev üç farklı yaklaşımla çözüldü ve üçü de, hiçbirinin görmediği test setinde **aynı doğrulama hattıyla** ölçüldü:
 
-| Sistem | Doğrulanan değişiklik | Hatalı kayıt | Doğrulama oranı |
-|---|---|---|---|
-| Kural sistemi | 39 | 1 | %97,5 |
-| mT5-small | 33 | 8 | %80,5 |
-| **Hibrit**: kural sistemi; kuralın hiçbir kayıt çıkarmadığı maddelerde model | **41** | 3 | %93,2 |
+- **Kural sistemi:** düzenli ifadelerle yazılmış, hata analizleriyle olgunlaştırılmış çıkarıcı.
+- **mT5-small:** kural sistemi + doğrulama ile üretilen **gümüş etiketlerle** (256 örnek) eğitildi. Model uzun alıntı metinlerini kopyalamaz; işlemi ve konumu üretir, alıntılar sonradan yerine konur.
+- **Qwen2.5-7B-Instruct:** hiç eğitilmedi. Talimat ve eğitim setinden kurala göre seçilmiş 10 örnekle (few-shot) çalıştırıldı; 4-bit nicelemeyle tek bir T4 GPU'da, madde başına ~4 saniye.
 
-- **Tek başına model kural sisteminden zayıf**, ama kuralların kör noktalarında işe yarıyor: kural sisteminin hiçbir şey çıkaramadığı iki maddede (iki geçici madde eklemesi) doğrulanmış değişiklik buldu ve kural sisteminin test setindeki tek hatalı maddesini doğru çözdü.
-- **Hibrit, doğrulanan değişiklik sayısını %5 artırdı** ve bunun karşılığında iki yanlış kayıt ekledi. Hibrit kuralı sonuçlara bakılarak değil, önceden tanımlandı ve doğrulama sinyali kullanmıyor (yeni yayımlanan bir değişiklikte konsolide metin henüz güncellenmemiş olur).
-- **Pratik öneri:** Kural sisteminin kayıtları otomatik kabul edilir, modelin eklediği kayıtlar "insan onayı gerekiyor" olarak işaretlenir. Uyum takibinde bir değişikliği kaçırmanın maliyeti, yanlış bir uyarıyı incelemekten çok yüksektir.
+| Sistem | Doğrulanan değişiklik | Hatalı kayıt | Doğrulama oranı | Gümüş etiket F1 |
+|---|---|---|---|---|
+| Kural sistemi | 39 | 1 | **%97,5** | – |
+| mT5-small (eğitilmiş) | 33 | 8 | %80,5 | %67,6 |
+| Qwen 7B (eğitimsiz, 10 örnek) | 35 | 10 | %77,8 | **%75,0** |
+| Hibrit: kural + mT5 | **41** | 3 | %93,2 | – |
+| Hibrit: kural + LLM | 40 | 3 | %93,0 | – |
 
-Modelin başlıca hata türleri: karmaşık, çok hedefli maddelerde yapının çökmesi ve kayıt düzeyinde tekrar döngüleri. Küçük veriyle eğitilen üretici modellerin tipik zaafları.
+Geliştirme setinde (TCMB Ödeme Hizmetleri) sıralama daha da belirgin: kural %98,6, LLM %82,7, mT5 %66,1.
+
+**Bulgular**
+
+- **Hiç eğitilmemiş dil modeli, o görev için özel olarak eğitilmiş küçük modeli geçti** (gümüş etiket F1 %75,0'e karşı %67,6; geliştirme setinde %82,7'ye karşı %66,1). 256 örnek, mT5-small'ı bu görevde yeterince eğitmeye yetmiyor.
+- **Kural sistemi ikisini de geçiyor.** Görev dar ve kalıplı olduğunda, olgunlaşmış bir kural sistemi hâlâ en isabetli çözüm.
+- **Kararlılık farkı büyük.** mT5 kayıt düzeyinde tekrar döngülerine giriyor (test setinde 23 tekrarlanan kayıt) ve ibareleri eğitim verisinden ezberleyip uyduruyor; LLM'de tekrar sayısı **sıfır** ve kopyalama kısıtı test setinde hiçbir kaydı değiştirmedi, yani ibareleri metinden doğru alıyor.
+- **Modeller kuralların kör noktalarını görüyor.** Kural sisteminin hiçbir kayıt çıkaramadığı maddelerde mT5 iki, LLM bir doğrulanmış değişiklik buldu (ikisi de geçici madde eklemeleri). mT5 ayrıca kural sisteminin test setindeki tek hatalı maddesini doğru çözdü.
+- **Hibrit en fazla değişikliği yakalıyor:** kural + mT5 ile 41 doğrulanmış değişiklik (kural sisteminden %5 fazla), karşılığında 2 yanlış kayıt.
+- **Zincirin sırası önemli.** "Kural → LLM → mT5" üçlü zinciri, "kural → LLM" ile aynı sonucu verdi: LLM, kuralın boş kaldığı her maddede bir şey ürettiği için mT5'e hiç sıra gelmiyor. İki modelin kayıtlarını birleştiren (union) bir tasarım muhtemelen daha fazla yakalar; ancak bu tasarım sonuçlara bakılarak seçilirse test anlamını yitireceği için yeni bir test setiyle denenmek üzere yol haritasına bırakıldı.
+
+**Pratik öneri:** Kural sisteminin kayıtları otomatik kabul edilir, modelin eklediği kayıtlar "insan onayı gerekiyor" olarak işaretlenir. Uyum takibinde bir değişikliği kaçırmanın maliyeti, yanlış bir uyarıyı incelemekten çok daha yüksektir.
 
 ### 3. Ölçümle ilgili iki ders
 
@@ -181,7 +194,7 @@ src/mevzuatradar/
   extract/verify.py        Konsolide metinle zaman farkındalıklı doğrulama
   extract/evaluate.py      Etiketli sete karşı precision/recall/F1
   cli.py                   Komut satırı arayüzü
-tests/                     80 test: birimler, gerçek değişiklik cümleleri, uçtan uca zincir ve değerlendirme aracı
+tests/                     84 test: birimler, gerçek değişiklik cümleleri, uçtan uca zincir ve değerlendirme aracı
 ```
 
 ## Bilinen sınırlamalar
@@ -189,7 +202,8 @@ tests/                     80 test: birimler, gerçek değişiklik cümleleri, u
 - **"Sonradan değişti" kayıtları doğrulanmış değildir**, yalnızca hata sayılmaz. Değişiklikleri tarih sırasıyla uygulayıp her ara sürümü üreten versiyonlama bu boşluğu kapatacak.
 - **Recall doğrudan ölçülmüyor.** Doğrulama bulunan kayıtların doğruluğunu ölçer. Hiç çıkarılamayan değişiklikler ancak dolaylı yoldan görünür: "şüpheli" maddeler (kayıt çıkmayan ama yürürlük/yürütme maddesi olmayan maddeler) ve modelin kuralların boş geçtiği yerde bulduğu değişiklikler.
 - **Kural tabanlı çıkarım kırılgandır.** Görülmemiş verideki ilk ölçümlerin %79–98 arasında değişmesi bunu gösteriyor; her yeni kurum ve dönem yeni kalıplar getirebilir.
-- **Model küçük veriyle eğitildi** (256 örnek, mT5-small). Test seti de küçük (2 yönetmelik, 91 madde); model sonuçlarındaki farklar bu yüzden temkinli yorumlanmalı.
+- **Model küçük veriyle eğitildi** (256 örnek, mT5-small) ve test seti küçük (2 yönetmelik, 91 madde); model sonuçlarındaki farklar temkinli yorumlanmalı.
+- **LLM tarafında tek bir model ve tek bir istem denendi** (Qwen2.5-7B, 10 örnek). Daha büyük modeller, farklı istemler veya daha fazla örnek sonucu değiştirebilir.
 - İbare değişikliklerinin doğrulaması içerik araması ile yapılır; aynı ibare birimde başka bir yerde de geçiyorsa yanlış sonuç mümkündür (TCMB 32/2 vakası).
 - Test setindeki iki yönetmelik artık kullanıldı; yeni bir genelleme ölçümü için hiç görülmemiş yönetmelikler gerekir.
 - Kanunlar (torba kanunlarla değiştirildikleri için), Cumhurbaşkanlığı yönetmelikleri, tebliğler ve ek içi değişiklikler henüz kapsam dışıdır.
@@ -200,7 +214,8 @@ tests/                     80 test: birimler, gerçek değişiklik cümleleri, u
 - [x] Kural tabanlı çıkarım ve konsolide metinle zaman farkındalıklı doğrulama
 - [x] Üç genelleme ölçümü ve dondurulmuş test seti
 - [x] Gümüş etiketli veri seti, mT5 modeli ve kural/model/hibrit karşılaştırması
-- [ ] Birkaç örnekle yönlendirilmiş büyük dil modeli (LLM) ile karşılaştırma
+- [x] Birkaç örnekle yönlendirilmiş dil modeli (Qwen 7B) ile karşılaştırma ve hibrit
+- [ ] Kayıtları birleştiren (union) hibrit tasarımı; yeni bir test setiyle ölçüm
 - [ ] Daha fazla eğitim verisiyle model; BERTurk ile NER + ilişki çıkarımı
 - [ ] Değişiklikleri sırayla uygulayan madde versiyonlama (her tarihteki geçerli metin)
 - [ ] Taranmış eski Resmî Gazete sayıları için layout analizi + VLM
