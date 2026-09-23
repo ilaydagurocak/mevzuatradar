@@ -15,6 +15,7 @@
   mevzuatradar evaluate-model --pred data/ml/preds_dev.jsonl --split dev
   mevzuatradar export-llm --split test --shots 10
   mevzuatradar find-original --source bddk_kart --write
+  mevzuatradar build-versions --source bddk_kart --verbose
   mevzuatradar serve                      (http://127.0.0.1:8000 demo + /docs)
 """
 from __future__ import annotations
@@ -329,6 +330,45 @@ def _find_original(args):
         print(f"{args.config} güncellendi (original_url). Şimdi: mevzuatradar download")
 
 
+def _build_versions(args):
+    from mevzuatradar.version.build import build_chain
+
+    zincir = build_chain(args.source, args.raw_dir)
+    toplam_u = sum(v.applied for v in zincir.versions)
+    toplam_h = sum(len(v.failed) for v in zincir.versions)
+    print(f"{zincir.source}: {len(zincir.versions) - 1} değişiklik uygulandı "
+          f"({toplam_u} kayıt başarılı, {toplam_h} başarısız)")
+    for v in zincir.versions[1:]:
+        durum = f"{v.applied} uygulandı" + (f", {len(v.failed)} başarısız" if v.failed else "")
+        print(f"  {v.label:<14} {durum}")
+        if args.verbose:
+            for islem, sebep in v.failed:
+                print(f"      [atlandı] {islem}: {sebep}")
+    if zincir.similarity is not None:
+        print(f"\nSon sürüm ile resmi konsolide metnin benzerliği: {zincir.similarity:.1%}")
+    from mevzuatradar.version.build import compare_by_article
+    farklar = compare_by_article(args.source, zincir.versions[-1].text, args.raw_dir)
+    if farklar:
+        sayim = {}
+        for d in farklar:
+            sayim[d.durum] = sayim.get(d.durum, 0) + 1
+        esit = sayim.get("ayni", 0)
+        print(f"Madde bazında: {esit}/{len(farklar)} madde birebir aynı | "
+              + ", ".join(f"{k}: {v}" for k, v in sorted(sayim.items()) if k != "ayni"))
+        if args.verbose:
+            for d in farklar:
+                if d.durum != "ayni":
+                    oran = f"{d.ratio:.0%}" if d.ratio is not None else "-"
+                    print(f"    {d.madde:<16} {d.durum:<12} benzerlik {oran}")
+    if args.out_dir:
+        from pathlib import Path as _P
+        d = _P(args.out_dir) / args.source
+        d.mkdir(parents=True, exist_ok=True)
+        for k, v in enumerate(zincir.versions):
+            (d / f"{k:02d}_{v.label}.txt").write_text(v.text, encoding="utf-8")
+        print(f"Sürümler yazıldı: {d}")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="mevzuatradar")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -363,6 +403,9 @@ def main(argv=None):
     em.add_argument("--raw-dir", default="data/raw")
     el = sub.add_parser("export-llm"); el.add_argument("--split", default="dev")
     el.add_argument("--shots", type=int, default=10); el.add_argument("--data-dir", default="data/ml")
+    bv = sub.add_parser("build-versions"); bv.add_argument("--source", required=True)
+    bv.add_argument("--raw-dir", default="data/raw"); bv.add_argument("--out-dir")
+    bv.add_argument("--verbose", action="store_true")
     fo = sub.add_parser("find-original"); fo.add_argument("--source", required=True)
     fo.add_argument("--write", action="store_true"); fo.add_argument("--config", default="configs/sources.yaml")
     fo.add_argument("--raw-dir", default="data/raw")
@@ -425,6 +468,8 @@ def main(argv=None):
         _serve(args)
     elif args.cmd == "find-original":
         _find_original(args)
+    elif args.cmd == "build-versions":
+        _build_versions(args)
     elif args.cmd == "evaluate-model":
         _evaluate_model(args)
     elif args.cmd == "find-amendments":
