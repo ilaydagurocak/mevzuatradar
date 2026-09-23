@@ -128,3 +128,39 @@ def consolidated_annotation_sources(consolidated_path: str | Path) -> list[str]:
         if m:
             out.append(f"RG-{m.group(1)}-{m.group(2)}" + (" Mükerrer" if m.group(3) else ""))
     return out
+
+
+# "10/3/2007 tarihli ve 26458 sayılı Resmî Gazete'de yayımlanan <ad> Yönetmeliğin ..."
+ORIGINAL_REF = re.compile(
+    r"(?P<tarih>\d{1,2}/\d{1,2}/\d{4})\s+tarihli\s+ve\s+(?P<sayi>\d{4,6})\s+sayılı\s+"
+    # devam ileriye bakışla okunur: pencere metni tüketmesin, sonraki atıflar da görülebilsin
+    r"Resm[îi]\s*Gazete[’'`]?de\s+yayımlanan\s*(?=(?P<devam>.{0,160}))", re.S)
+
+
+def original_ref(amendment_text: str, name: str) -> RGRef | None:
+    """Değişiklik yönetmeliğinin ilk maddesinden, DEĞİŞTİRİLEN düzenlemenin ilk yayım tarihini bulur.
+    Metinde birden çok atıf olabilir (ör. dayanak kanun); atfın ardından düzenlemenin adı geçen seçilir."""
+    ipucu = _norm(" ".join(keyword_from_name(name).split()[:3]))
+    ilk = None
+    for m in ORIGINAL_REF.finditer(amendment_text):
+        ref = parse_ref(f"RG-{m['tarih']}-{m['sayi']}")
+        if ref is None:
+            continue
+        ilk = ilk or ref
+        # Pencere bir sonraki atfa taşabilir; oradaki ad bu atfa ait değildir, kes.
+        devam = re.split(r"\d{1,2}/\d{1,2}/\d{4}\s+tarihli", m["devam"])[0]
+        if ipucu and ipucu in _norm(devam):
+            return ref
+    return ilk
+
+
+def find_original_link(html: str, base_url: str, keyword: str | list[str]) -> list[tuple[str, str]]:
+    """İçindekiler sayfasında düzenlemenin İLK yayımını arar: adı geçen ama 'değişiklik' geçmeyen bağlantı."""
+    soup = BeautifulSoup(html, "html.parser")
+    keys = [_norm(k) for k in ([keyword] if isinstance(keyword, str) else keyword)]
+    hits = []
+    for a in soup.find_all("a", href=True):
+        text = _norm(a.get_text(" "))
+        if any(key in text for key in keys) and "DEĞİŞİKLİK" not in text and "YÜRÜRLÜKTEN" not in text:
+            hits.append((a.get_text(" ", strip=True), urljoin(base_url, a["href"])))
+    return hits

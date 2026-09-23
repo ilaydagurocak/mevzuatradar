@@ -43,3 +43,24 @@ def test_eski_adla_yayimlanan_degisiklik_de_bulunur():
     assert find_links(html, base, guncel) == []                    # yalnızca güncel adla: kaçar
     assert [u for _, u in find_links(html, base, [guncel, eski])] == [
         "https://www.resmigazete.gov.tr/eskiler/2019/01/20190101-3.htm"]
+
+
+def test_orijinal_yayim_referansi_dogru_atiftan_alinir():
+    from mevzuatradar.collect.rg_finder import original_ref
+    # Metinde iki atıf var: önce dayanak kanun, sonra değiştirilen yönetmelik
+    metin = ("MADDE 1 – 5/11/2013 tarihli ve 28812 sayılı Resmî Gazete’de yayımlanan Bankacılık Kanununa dayanılarak, "
+             "11/7/2014 tarihli ve 29057 sayılı Resmî Gazete’de yayımlanan Bankaların İç Sistemleri ve İçsel Sermaye "
+             "Yeterliliği Değerlendirme Süreci Hakkında Yönetmeliğin 5 inci maddesi değiştirilmiştir.")
+    ref = original_ref(metin, "Bankaların İç Sistemleri ve İçsel Sermaye Yeterliliği Değerlendirme Süreci Hakkında Yönetmelik")
+    assert ref.label == "RG-11/7/2014-29057"
+    assert ref.index_url == "https://www.resmigazete.gov.tr/eskiler/2014/07/20140711.htm"
+
+
+def test_orijinal_baglanti_degisiklikleri_elemeli():
+    from mevzuatradar.collect.rg_finder import find_original_link
+    html = """<a href="20070310-3.htm">Banka Kartları ve Kredi Kartları Hakkında Yönetmelik</a>
+              <a href="20070310-4.htm">Banka Kartları ve Kredi Kartları Hakkında Yönetmelikte Değişiklik Yapılmasına Dair Yönetmelik</a>
+              <a href="20070310-5.htm">Başka Bir Yönetmelik</a>"""
+    base = "https://www.resmigazete.gov.tr/eskiler/2007/03/20070310.htm"
+    hits = find_original_link(html, base, keyword_from_name("Banka Kartları ve Kredi Kartları Hakkında Yönetmelik"))
+    assert [u for _, u in hits] == ["https://www.resmigazete.gov.tr/eskiler/2007/03/20070310-3.htm"]

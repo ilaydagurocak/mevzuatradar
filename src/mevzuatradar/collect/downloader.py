@@ -86,6 +86,8 @@ def run(config_path: str, raw_dir: str = "data/raw", refresh: bool = False) -> l
     for src in cfg["sources"]:
         if src.get("url"):
             jobs.append((src["id"], "konsolide", src["url"]))
+        if src.get("original_url"):
+            jobs.append((src["id"], "orijinal", src["original_url"]))
         for i, amd in enumerate(src.get("amendments") or []):
             url = amd if isinstance(amd, str) else amd.get("url")
             if url:

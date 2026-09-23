@@ -25,6 +25,8 @@ sources:
   - https://www.resmigazete.gov.tr/eskiler/2019/01/20190111-3.htm
   - https://www.resmigazete.gov.tr/eskiler/2020/03/20200328-13.htm
   - https://www.resmigazete.gov.tr/eskiler/2020/09/20200925-12.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2007/03/20070310-7.htm
+  original_ref: RG-10/3/2007-26458
 - id: bddk_kredi_islemleri
   name: Bankaların Kredi İşlemlerine İlişkin Yönetmelik (2023)
   issuer: BDDK
@@ -86,6 +88,8 @@ sources:
   - https://www.resmigazete.gov.tr/eskiler/2015/10/20151023-6.htm
   - https://www.resmigazete.gov.tr/eskiler/2016/01/20160120-1.htm
   - https://www.resmigazete.gov.tr/eskiler/2017/03/20170304-5.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2014/07/20140711-5.htm
+  original_ref: RG-11/7/2014-29057
 - id: bddk_sermaye_yeterliligi
   name: Bankaların Sermaye Yeterliliğinin Ölçülmesine ve Değerlendirilmesine İlişkin Yönetmelik
   issuer: BDDK
@@ -142,6 +146,8 @@ sources:
   - https://www.resmigazete.gov.tr/eskiler/2019/02/20190226-9.htm
   - https://www.resmigazete.gov.tr/eskiler/2020/01/20200114-8.htm
   - https://www.resmigazete.gov.tr/eskiler/2025/08/20250827-7.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2013/04/20130424-5.htm
+  original_ref: RG-24/4/2013-28627
 - id: tcmb_mutabakat_faaliyet
   name: Ödeme ve Menkul Kıymet Mutabakat Sistemlerinin Faaliyetleri Hakkında Yönetmelik
   issuer: TCMB

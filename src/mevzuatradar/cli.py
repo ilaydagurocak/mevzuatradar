@@ -14,6 +14,7 @@
   mevzuatradar export-seq2seq
   mevzuatradar evaluate-model --pred data/ml/preds_dev.jsonl --split dev
   mevzuatradar export-llm --split test --shots 10
+  mevzuatradar find-original --source bddk_kart --write
   mevzuatradar serve                      (http://127.0.0.1:8000 demo + /docs)
 """
 from __future__ import annotations
@@ -274,6 +275,60 @@ def _serve(args):
     uvicorn.run("mevzuatradar.api.main:app", host=args.host, port=args.port, reload=args.reload)
 
 
+def _find_original(args):
+    """Düzenlemenin İLK yayımını bulur: ilk değişiklik yönetmeliğindeki atıftan tarihi alır,
+    o günün Resmî Gazete içindekiler sayfasında adı geçen (ama 'değişiklik' geçmeyen) bağlantıyı arar."""
+    import glob
+    from pathlib import Path as _Path
+
+    import requests
+    import truststore
+    import yaml
+
+    from mevzuatradar.collect.polite import RobotsChecker
+    from mevzuatradar.collect.rg_finder import (find_original_link, keyword_from_name, original_ref, _decode)
+    from mevzuatradar.parse.text_extract import extract_text
+
+    cfg_path = _Path(args.config)
+    cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))
+    src = next((s for s in cfg["sources"] if s["id"] == args.source), None)
+    if src is None:
+        print(f"'{args.source}' kimlikli kaynak {args.config} içinde yok.")
+        return
+    degisiklikler = sorted(glob.glob(f"{args.raw_dir}/{args.source}/degisiklik*"))
+    if not degisiklikler:
+        print("Değişiklik yönetmeliği yok; önce 'find-amendments' ve 'download' çalıştırın.")
+        return
+    ref = original_ref(extract_text(degisiklikler[0]).text, src["name"])
+    if ref is None:
+        print("İlk yayım tarihi, ilk değişiklik yönetmeliğinin metninde bulunamadı.")
+        return
+    print(f"İlk yayım: {ref.label}")
+
+    truststore.inject_into_ssl()
+    crawl = cfg.get("crawl", {})
+    session = requests.Session()
+    session.headers["User-Agent"] = crawl.get("user_agent", "MevzuatRadar/0.1")
+    robots = RobotsChecker(session, session.headers["User-Agent"], crawl.get("timeout_seconds", 30))
+    if not robots.allowed(ref.index_url):
+        print(f"[robots] izin verilmiyor: {ref.index_url}")
+        return
+    resp = session.get(ref.index_url, timeout=crawl.get("timeout_seconds", 30))
+    resp.raise_for_status()
+    keyword = [keyword_from_name(n) for n in [src["name"], *(src.get("former_names") or [])]]
+    links = find_original_link(_decode(resp), ref.index_url, keyword)
+    if not links:
+        print(f"Bağlantı bulunamadı. İçindekiler: {ref.index_url}")
+        return
+    for baslik, url in links[:5]:
+        print(f"[bulundu] {url}\n    {' '.join(baslik.split())[:160]}")
+    if args.write:
+        src["original_url"] = links[0][1]
+        src["original_ref"] = ref.label
+        cfg_path.write_text(yaml.safe_dump(cfg, allow_unicode=True, sort_keys=False, width=1000), encoding="utf-8")
+        print(f"{args.config} güncellendi (original_url). Şimdi: mevzuatradar download")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="mevzuatradar")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -308,6 +363,9 @@ def main(argv=None):
     em.add_argument("--raw-dir", default="data/raw")
     el = sub.add_parser("export-llm"); el.add_argument("--split", default="dev")
     el.add_argument("--shots", type=int, default=10); el.add_argument("--data-dir", default="data/ml")
+    fo = sub.add_parser("find-original"); fo.add_argument("--source", required=True)
+    fo.add_argument("--write", action="store_true"); fo.add_argument("--config", default="configs/sources.yaml")
+    fo.add_argument("--raw-dir", default="data/raw")
     sv = sub.add_parser("serve"); sv.add_argument("--host", default="127.0.0.1")
     sv.add_argument("--port", type=int, default=8000); sv.add_argument("--reload", action="store_true")
     bd = sub.add_parser("build-dataset"); bd.add_argument("--config", default="configs/sources.yaml")
@@ -365,6 +423,8 @@ def main(argv=None):
         _export_llm(args)
     elif args.cmd == "serve":
         _serve(args)
+    elif args.cmd == "find-original":
+        _find_original(args)
     elif args.cmd == "evaluate-model":
         _evaluate_model(args)
     elif args.cmd == "find-amendments":
