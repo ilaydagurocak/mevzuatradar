@@ -64,3 +64,13 @@ def test_orijinal_baglanti_degisiklikleri_elemeli():
     base = "https://www.resmigazete.gov.tr/eskiler/2007/03/20070310.htm"
     hits = find_original_link(html, base, keyword_from_name("Banka Kartları ve Kredi Kartları Hakkında Yönetmelik"))
     assert [u for _, u in hits] == ["https://www.resmigazete.gov.tr/eskiler/2007/03/20070310-3.htm"]
+
+
+def test_buyuk_harfli_yayimlanan_da_taninir():
+    from mevzuatradar.collect.rg_finder import original_ref
+    metin = ("MADDE 1 – 16/9/2008 tarihli ve 26999 sayılı Resmî Gazete’de Yayımlanan Suç Gelirlerinin "
+             "Aklanmasının ve Terörün Finansmanının Önlenmesine İlişkin Yükümlülüklere Uyum Programı "
+             "Hakkında Yönetmeliğin Geçici 1 inci maddesi değiştirilmiştir.")
+    ref = original_ref(metin, "Suç Gelirlerinin Aklanmasının ve Terörün Finansmanının Önlenmesine İlişkin "
+                              "Yükümlülüklere Uyum Programı Hakkında Yönetmelik")
+    assert ref.label == "RG-16/9/2008-26999"

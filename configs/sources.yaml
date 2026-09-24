@@ -5,6 +5,8 @@ sources:
   url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=34360&MevzuatTertip=5
   amendments:
   - https://www.resmigazete.gov.tr/eskiler/2020/06/20200620-1.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2020/03/20200315-10.htm
+  original_ref: RG-15/3/2020-31069
 - id: bddk_kart
   name: Banka Kartları ve Kredi Kartları Hakkında Yönetmelik
   issuer: BDDK
@@ -38,6 +40,8 @@ sources:
   url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=7&MevzuatNo=38568&MevzuatTertip=5
   amendments:
   - https://www.resmigazete.gov.tr/eskiler/2023/05/20230525-1.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2021/04/20210401-7.htm
+  original_ref: RG-1/4/2021-31441
 - id: masak_tedbirler
   name: Suç Gelirlerinin Aklanmasının ve Terörün Finansmanının Önlenmesine Dair Tedbirler Hakkında Yönetmelik
   issuer: MASAK
@@ -55,6 +59,8 @@ sources:
   - https://www.resmigazete.gov.tr/eskiler/2025/12/20251231-4.htm
   - https://www.resmigazete.gov.tr/eskiler/2026/03/20260319-2.htm
   - https://www.resmigazete.gov.tr/eskiler/2026/09/20260904-1.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2021/12/20211201-1.htm
+  original_ref: RG-1/12/2021-31676
 - id: masak_uyum
   name: Suç Gelirlerinin Aklanmasının ve Terörün Finansmanının Önlenmesine İlişkin Yükümlülüklere Uyum Programı Hakkında Yönetmelik
   issuer: MASAK
@@ -68,6 +74,8 @@ sources:
   - https://www.resmigazete.gov.tr/eskiler/2023/05/20230527-1.htm
   - https://www.resmigazete.gov.tr/eskiler/2024/12/20241225-4.htm
   - https://www.resmigazete.gov.tr/eskiler/2025/08/20250822-1.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2008/09/20080916-1.htm
+  original_ref: RG-16/9/2008-26999
 - id: bddk_kredi_siniflandirma
   name: Kredilerin Sınıflandırılması ve Bunlar İçin Ayrılacak Karşılıklara İlişkin Usul ve Esaslar Hakkında Yönetmelik
   issuer: BDDK
@@ -80,6 +88,8 @@ sources:
   - https://www.resmigazete.gov.tr/eskiler/2019/11/20191127-3.htm
   - https://www.resmigazete.gov.tr/eskiler/2021/07/20210706-12.htm
   - https://www.resmigazete.gov.tr/eskiler/2022/05/20220524-8.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2016/06/20160622-3.htm
+  original_ref: RG-22/6/2016-29750
 - id: bddk_ic_sistemler
   name: Bankaların İç Sistemleri ve İçsel Sermaye Yeterliliği Değerlendirme Süreci Hakkında Yönetmelik
   issuer: BDDK
@@ -100,6 +110,8 @@ sources:
   - https://www.resmigazete.gov.tr/eskiler/2016/12/20161209-1.htm
   - https://www.resmigazete.gov.tr/eskiler/2018/03/20180314-4.htm
   - https://www.resmigazete.gov.tr/eskiler/2021/06/20210608-5.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2015/10/20151023-9.pdf
+  original_ref: RG-23/10/2015-29511
 - id: bddk_muhasebe
   name: Bankaların Muhasebe Uygulamalarına ve Belgelerin Saklanmasına İlişkin Usul ve Esaslar Hakkında Yönetmelik
   issuer: BDDK
@@ -109,6 +121,8 @@ sources:
   - https://www.resmigazete.gov.tr/eskiler/2015/10/20151023-7.htm
   - https://www.resmigazete.gov.tr/eskiler/2019/04/20190402-3.htm
   - https://www.resmigazete.gov.tr/eskiler/2019/08/20190801-1.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2006/11/20061101-22.htm
+  original_ref: RG-1/11/2006-26333
 - id: bddk_destek_hizmeti
   name: Bankaların Destek Hizmeti Almalarına İlişkin Yönetmelik
   issuer: BDDK
@@ -118,6 +132,8 @@ sources:
   - https://www.resmigazete.gov.tr/eskiler/2017/03/20170304-4.htm
   - https://www.resmigazete.gov.tr/eskiler/2020/12/20201211-4.htm
   - https://www.resmigazete.gov.tr/eskiler/2022/11/20221108-7.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2011/11/20111105-11.htm
+  original_ref: RG-5/11/2011-28106
 - id: bddk_likidite
   name: Bankaların Likidite Karşılama Oranı Hesaplamasına İlişkin Yönetmelik
   issuer: BDDK
@@ -128,6 +144,8 @@ sources:
   - https://www.resmigazete.gov.tr/eskiler/2017/02/20170228-8.htm
   - https://www.resmigazete.gov.tr/eskiler/2017/07/20170713-4.htm
   - https://www.resmigazete.gov.tr/eskiler/2022/02/20220204-4.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2014/03/20140321-7.htm
+  original_ref: RG-21/3/2014-28948
 - id: bddk_finansal_kiralama
   name: Finansal Kiralama, Faktoring ve Finansman Şirketlerinin Kuruluş ve Faaliyet Esasları Hakkında Yönetmelik
   issuer: BDDK
@@ -176,6 +194,8 @@ sources:
   - https://www.resmigazete.gov.tr/eskiler/2019/11/20191127-2.htm
   - https://www.resmigazete.gov.tr/eskiler/2021/06/20210629-9.htm
   - https://www.resmigazete.gov.tr/eskiler/2022/05/20220524-7.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2013/12/20131224-8.htm
+  original_ref: RG-24/12/2013-28861
 crawl:
   delay_seconds: 3
   user_agent: MevzuatRadar/0.1 (egitim amacli portfoy projesi)

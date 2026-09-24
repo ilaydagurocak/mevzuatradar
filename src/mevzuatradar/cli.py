@@ -293,6 +293,16 @@ def _find_original(args):
 
     cfg_path = _Path(args.config)
     cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))
+    if args.all:
+        hedefler = [x["id"] for x in cfg["sources"] if not x.get("original_url")
+                    and glob.glob(f"{args.raw_dir}/{x['id']}/degisiklik*")]
+        print(f"İlk metni olmayan kaynaklar: {', '.join(hedefler) or '(yok)'}")
+        for k, sid in enumerate(hedefler):
+            print(f"\n===== {sid} =====")
+            args.source, args.all = sid, False
+            _find_original(args)
+            cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))   # önceki yazımı koru
+        return
     src = next((s for s in cfg["sources"] if s["id"] == args.source), None)
     if src is None:
         print(f"'{args.source}' kimlikli kaynak {args.config} içinde yok.")
@@ -559,7 +569,8 @@ def main(argv=None):
     bv = sub.add_parser("build-versions"); bv.add_argument("--source", required=True)
     bv.add_argument("--raw-dir", default="data/raw"); bv.add_argument("--out-dir")
     bv.add_argument("--verbose", action="store_true")
-    fo = sub.add_parser("find-original"); fo.add_argument("--source", required=True)
+    fo = sub.add_parser("find-original"); fo.add_argument("--source")
+    fo.add_argument("--all", action="store_true", help="ilk metni olmayan tüm kaynaklar")
     fo.add_argument("--write", action="store_true"); fo.add_argument("--config", default="configs/sources.yaml")
     fo.add_argument("--raw-dir", default="data/raw")
     sv = sub.add_parser("serve"); sv.add_argument("--host", default="127.0.0.1")
@@ -620,7 +631,10 @@ def main(argv=None):
     elif args.cmd == "serve":
         _serve(args)
     elif args.cmd == "find-original":
-        _find_original(args)
+        if not (args.source or args.all):
+            print("--source veya --all belirtin.")
+        else:
+            _find_original(args)
     elif args.cmd == "build-versions":
         _build_versions(args)
     elif args.cmd == "madde-at":

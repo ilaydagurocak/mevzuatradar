@@ -134,7 +134,8 @@ def consolidated_annotation_sources(consolidated_path: str | Path) -> list[str]:
 ORIGINAL_REF = re.compile(
     r"(?P<tarih>\d{1,2}/\d{1,2}/\d{4})\s+tarihli\s+ve\s+(?P<sayi>\d{4,6})\s+sayılı\s+"
     # devam ileriye bakışla okunur: pencere metni tüketmesin, sonraki atıflar da görülebilsin
-    r"Resm[îi]\s*Gazete[’'`]?de\s+yayımlanan\s*(?=(?P<devam>.{0,160}))", re.S)
+    # "Yayımlanan" bazı metinlerde büyük harfle başlar; harf durumuna duyarsız aranır.
+    r"Resm[îi]\s*Gazete[’'`]?de\s+[Yy]ayımlanan\s*(?=(?P<devam>.{0,160}))", re.S)
 
 
 def original_ref(amendment_text: str, name: str) -> RGRef | None:

@@ -41,3 +41,27 @@ def test_yorumlar_ve_ust_simge_dipnotlari_metne_karismaz():
     # Bilinen ödünleşim: mevzuat metinlerinde üst simge rakamlar neredeyse her zaman dipnottur;
     # bu yüzden silinirler. Nadir görülen formül üsleri (x²) de bu sırada kaybolur.
     assert "x formülü korunur." in text
+
+
+def test_pdfte_tireyle_bolunmus_kelimeler_birlesir():
+    from mevzuatradar.parse.text_extract import _birlestir_bolunmus_kelimeler
+    metin = "bankaların yeterli özkaynak bulundur-\nmalarının sağlanması ve 5411 sayılı Kanu-\nnunun 43 üncü maddesi"
+    assert _birlestir_bolunmus_kelimeler(metin) == (
+        "bankaların yeterli özkaynak bulundurmalarının sağlanması ve 5411 sayılı Kanununun 43 üncü maddesi")
+    # gerçek tireli ifadeler bozulmamalı
+    assert _birlestir_bolunmus_kelimeler("EK-1\nve Ek-2") == "EK-1\nve Ek-2"
+
+
+def test_pdf_sayfa_altliklari_atilir():
+    from mevzuatradar.parse.text_extract import _tekrar_eden_satirlar
+    sayfalar = [f"Yönetmelik Bankaların Sermaye Disket, Ekler Film {i}\n"
+                f"MADDE {i} – (1) Maddenin kendine özgü metni.\nResmî Gazete Sayı: 29511" for i in range(1, 6)]
+    atilacak = _tekrar_eden_satirlar(sayfalar)
+    assert "yönetmelik bankaların sermaye disket, ekler film" in atilacak   # sayfa no atılarak eşleşir
+    assert "resmî gazete sayı:" in atilacak
+    assert not any(k.startswith("madde") for k in atilacak)                 # madde metinleri korunur
+
+
+def test_az_sayfali_pdfte_temizlik_yapilmaz():
+    from mevzuatradar.parse.text_extract import _tekrar_eden_satirlar
+    assert _tekrar_eden_satirlar(["Başlık\nmetin", "Başlık\nmetin"]) == set()

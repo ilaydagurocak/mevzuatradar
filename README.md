@@ -114,17 +114,23 @@ Düzenlemenin **ilk yayımlanan metni** Resmî Gazete'den bulunur (ilk değişik
 sırasıyla metne uygulanır. Böylece her tarihteki metin üretilir.
 
 Bu, projenin en güçlü **kendi kendini denetleme** aracı: bütün değişiklikler uygulandığında resmi
-konsolide metin elde edilmelidir. Sonuç madde madde karşılaştırılır (bütün metni tek parça
-karşılaştırmak sıralama farklarına ve eklere duyarlıdır):
+konsolide metin elde edilmelidir. Karşılaştırma madde madde yapılır; bütün metni tek parça
+karşılaştırmak sıralama farklarına ve eklere duyarlıdır.
 
-| Yönetmelik | Uygulanan kayıt | Madde bazında birebir aynı |
-|---|---|---|
-| Banka Kartları ve Kredi Kartları | 73 / 74 | 35 / 38 |
-| Bankaların İç Sistemleri | 33 / 34 | 64 / 67 |
-| Finansal Kiralama Kuruluş ve Faaliyet | 29 / 29 | 26 / 30 |
+13 yönetmeliğin tamamında:
 
-Uygulanamayan kayıtlar eklerle (form/tablo) ilgilidir; ekler düzenleme metninde yer almaz.
-Kalan madde farkları resmi metnin değişiklik notlarından ve tipografiden kaynaklanır.
+| | Sonuç |
+|---|---|
+| Sırayla uygulanan değişiklik kaydı | **413 / 460** (%89,8) |
+| Resmi konsolide metinle birebir aynı madde | **441 / 487** (%90,6) |
+
+Uygulanamayan kayıtların neredeyse tamamı **ekler** (form ve tablolar): ekler düzenlemenin madde
+metninde yer almaz, ayrı belgelerdir. Bu, bazı yönetmeliklerde hacmin büyük kısmını oluşturur;
+örneğin Sermaye Yeterliliği Yönetmeliği'nin resmi metninin %88'i eklerden oluşur, bu yüzden o
+yönetmelikte madde bazında 31/40 birebir eşleşme sağlanırken tam metin benzerliği düşük kalır.
+
+Örnek sonuçlar: Bilgi Sistemleri 46/47, İç Sistemler 64/67, TCMB Ödeme Hizmetleri 83/89,
+Banka Kartları 36/38 madde birebir aynı.
 
 **Tarihe göre sorgu.** Sürüm zinciri, "bu madde şu tarihte nasıldı?" sorusunu cevaplar:
 
@@ -329,7 +335,7 @@ src/mevzuatradar/
   extract/supersede.py     Üzerine yazılmış değişikliklerin bağımsız kanıtla doğrulanması
   api/main.py              FastAPI servisi: /extract, /verify, /health, demo sayfası
   cli.py                   Komut satırı arayüzü
-tests/                     136 test: birimler, gerçek değişiklik cümleleri, uçtan uca zincir ve değerlendirme aracı
+tests/                     141 test: birimler, gerçek değişiklik cümleleri, uçtan uca zincir ve değerlendirme aracı
 ```
 
 ## Bilinen sınırlamalar

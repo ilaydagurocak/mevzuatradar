@@ -57,6 +57,43 @@ def from_html(html: str) -> str:
     return _tidy(soup.get_text())
 
 
+HECE_BOLME = re.compile(r"(\w)-\n(\w)")
+
+
+def _birlestir_bolunmus_kelimeler(text: str) -> str:
+    """PDF'lerde satır sonuna sığmayan kelimeler tireyle bölünür ("Kanu-\nnunun").
+    Metin aramaları bozulmasın diye birleştirilir."""
+    return HECE_BOLME.sub(r"\1\2", text)
+
+
+SAYFA_NO = re.compile(r"\d{1,4}")
+# Güvence: düzenlemenin yapısını taşıyan satırlar hiçbir koşulda altlık sayılıp atılmaz.
+YAPI_SATIRI = re.compile(r"^\s*(?:(?:GEÇİCİ|EK)\s+)?MADDE\b|^\s*\(\d+\)|^\s*[a-zçğıöşü]{1,3}\)", re.I)
+
+
+def _tekrar_eden_satirlar(sayfalar: list[str], esik: float = 0.5, max_uzunluk: int = 90) -> set[str]:
+    """Sayfaların çoğunda tekrar eden kısa satırlar sayfa başlığı/altlığıdır.
+
+    Resmî Gazete PDF'lerinde her sayfada "... Yönetmelik Bankaların Sermaye ... Ekler Film 7" gibi
+    bir altlık bulunur; madde metinlerinin arasına girip metin karşılaştırmalarını bozar.
+    Sayfa numarası değiştiği için satırlar rakamlar atılarak karşılaştırılır.
+    """
+    from collections import Counter
+
+    if len(sayfalar) < 3:
+        return set()
+    sayac = Counter()
+    for sayfa in sayfalar:
+        gorulen = set()
+        for satir in sayfa.split("\n"):
+            t = satir.strip()
+            if t and len(t) <= max_uzunluk and not YAPI_SATIRI.match(t):
+                gorulen.add(SAYFA_NO.sub("", t).strip().lower())
+        sayac.update(gorulen)
+    sinir = max(3, int(len(sayfalar) * esik))
+    return {k for k, n in sayac.items() if n >= sinir and k}
+
+
 def from_pdf(path: Path, min_chars_per_page: int = 50) -> ExtractedText:
     import pdfplumber
 
@@ -68,8 +105,16 @@ def from_pdf(path: Path, min_chars_per_page: int = 50) -> ExtractedText:
                 empty += 1
             texts.append(t)
         n = len(pdf.pages)
-    return ExtractedText(_tidy("\n".join(texts)), "pdf", needs_ocr=n > 0 and empty / n > 0.5,
-                         pages_without_text=empty)
+
+    atilacak = _tekrar_eden_satirlar(texts)
+    temiz = []
+    for sayfa in texts:
+        temiz.append("\n".join(
+            satir for satir in sayfa.split("\n")
+            if YAPI_SATIRI.match(satir.strip())
+            or SAYFA_NO.sub("", satir.strip()).strip().lower() not in atilacak))
+    return ExtractedText(_tidy(_birlestir_bolunmus_kelimeler("\n".join(temiz))), "pdf",
+                         needs_ocr=n > 0 and empty / n > 0.5, pages_without_text=empty)
 
 
 def extract_text(path: str | Path) -> ExtractedText:

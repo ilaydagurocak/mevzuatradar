@@ -90,6 +90,8 @@ def _scope(lines: list[str], loc: dict, strict: bool = False) -> tuple[tuple[int
     Aksi halde 'sekizinci fıkrayı kaldır' isteği maddenin tamamını siler.
     strict=False (ibare işlemleri): metin arandığı için üst kapsamda aramak zararsızdır.
     """
+    if str(loc.get("madde_type") or "") == "ek_belge" or str(loc.get("madde") or "").upper().startswith(("EK-", "EK ")):
+        return None, "ek içi değişiklik (form/tablo); düzenleme metninde yer almıyor"
     if not loc.get("madde"):
         return None, "hedef madde yok"
     span = _madde_span(lines, str(loc["madde"]), loc.get("madde_type") or "normal")

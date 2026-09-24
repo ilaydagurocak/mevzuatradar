@@ -322,3 +322,10 @@ def test_kismen_var_olan_fikralar_hem_degistirilir_hem_eklenir():
     assert "Yeni yedi." in yeni and "Eski yedi." not in yeni
     satirlar = [s for s in yeni.split("\n") if s.strip()]
     assert satirlar.index("(8) Yepyeni sekiz.") < satirlar.index("MADDE 27 – (1) Yirmi yedi.")
+
+
+def test_ek_ici_hedef_net_mesaj_verir():
+    _, res = apply_record("MADDE 1 – (1) Metin.\n", {"operation": "BIRIM_DEGISTIR", "unit": "fikra",
+                                                     "new_text": "(1) Yeni.",
+                                                     "location": {"madde_type": "ek_belge", "madde": "EK-1"}})
+    assert res.status == "hedef_bulunamadi" and "ek içi" in res.detail
