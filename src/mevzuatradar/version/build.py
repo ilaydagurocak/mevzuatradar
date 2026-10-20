@@ -82,6 +82,63 @@ def build_chain(source: str, raw_dir: str = "data/raw") -> ChainResult:
     return ChainResult(source, versions, benzerlik, bool(kons))
 
 
+# "MADDE 15 – (Mülga:RG-1/8/2019-30849)" — maddenin yerinde yalnızca kaldırma notu var.
+MULGA_MEZARI_DESENI = (
+    r"^(?:(?:GEÇİCİ|EK)\s+)?MADDE\s+[\w/]+\s*[-–—]?\s*(?:\(\s*M[üÜ]lga[^)]*\)\s*)+$"
+)
+
+
+def mulga_mezari_mi(metin: str) -> bool:
+    """Resmi metinde maddenin yerinde yalnızca '(Mülga:RG-...)' notu mu var?
+
+    Böyle bir madde yürürlükten kaldırılmıştır. Biz onu metinden sildiğimiz için
+    karşılaştırmada 'bizde_yok' görünür, ama iki taraf da maddenin kalktığını söyler.
+    """
+    import re
+
+    return bool(re.match(MULGA_MEZARI_DESENI, re.sub(r"\s+", " ", metin).strip()))
+
+
+def bilinen_kaldirma_tutarsizligi_mi(source: str, key: str,
+                                     yol: str = "configs/known_source_issues.yaml") -> bool:
+    """Kaldırma işleminin resmi metne işlenmediği, elle teyit edilmiş vakalar.
+
+    Yalnızca BIRIM_KALDIR kayıtlarına bakar: 'bizde_yok' ancak bir kaldırmayı biz
+    uygulayıp kaynak uygulamadıysa masumdur.
+    """
+    import os
+
+    import yaml
+
+    if not os.path.exists(yol):
+        return False
+    try:
+        with open(yol, encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) or {}
+    except (OSError, yaml.YAMLError):
+        return False
+    for issue in cfg.get("issues") or []:
+        if issue.get("source") != source or issue.get("operation") != "BIRIM_KALDIR":
+            continue
+        loc = issue.get("location") or {}
+        if (madde := loc.get("madde")) is None:
+            continue
+        tip = loc.get("madde_type")
+        anahtar = f"{tip}:{madde}" if tip and tip != "normal" else str(madde)
+        if anahtar == key:
+            return True
+    return False
+
+
+def bizde_yok_nedeni(source: str, key: str, resmi_metin: str) -> str:
+    """'bizde_yok' maddenin sebebini etiketler; masum değilse olduğu gibi bırakır."""
+    if mulga_mezari_mi(resmi_metin):
+        return "mulga_mezari"
+    if bilinen_kaldirma_tutarsizligi_mi(source, key):
+        return "kaynak_tutarsizligi"
+    return "bizde_yok"
+
+
 def compare_by_article(source: str, text: str, raw_dir: str = "data/raw",
                        esik: float = 0.98) -> list[MaddeDiff]:
     """Ürettiğimiz metni resmi konsolide metinle MADDE MADDE karşılaştırır.
@@ -108,7 +165,7 @@ def compare_by_article(source: str, text: str, raw_dir: str = "data/raw",
     for key in sorted(set(bizim_map) | set(resmi_map), key=lambda k: (":" in k, len(k), k)):
         b, r = bizim_map.get(key), resmi_map.get(key)
         if b is None:
-            out.append(MaddeDiff(key, None, "bizde_yok"))
+            out.append(MaddeDiff(key, None, bizde_yok_nedeni(source, key, r.raw_text)))
         elif r is None:
             out.append(MaddeDiff(key, None, "resmide_yok"))
         else:
