@@ -43,3 +43,48 @@ issues:
         url: https://www.alomaliye.com/2018/03/14/bankalarin-sermaye-yeterliliginin-olculmesi/
     checked: 2026-09-21
     note: Aynı değişikliğin 34. maddeye etkisi ayrıca incelenmedi.
+
+# Değişiklik notlarının biçimsel sorunları.
+#
+# Yukarıdaki issues: girdileri "kayıt doğru ama konsolide metin eksik" vakalarıdır ve
+# doğrulama başarısız olduğunda etiket üretirler. Buradaki girdiler farklıdır: kayıt
+# doğrulanabilir, sorun nottaki REFERANSIN hangi Resmî Gazete sayfasına karşılık
+# geldiğinin tespit edilmesindedir. Etiket üretmezler; hangi kaynakta hangi konvansiyon
+# sapmasının görüldüğünü belgelerler.
+annotation_issues:
+  - id: ft-ucret-not-yururluk-tarihi
+    source: tcmb_ft_ucret_teblig
+    kind: yururluk_tarihi_yazilmis
+    note_ref: RG-1/12/2023-32386
+    actual_ref: RG-25/11/2023-32380
+    amendment_url: https://www.resmigazete.gov.tr/eskiler/2023/11/20231125-31.htm
+    description: >-
+      Konsolide metnin 12. maddesindeki "(Mülga üçüncü cümle:RG-1/12/2023-32386)" ve
+      "(Mülga ikinci cümle:RG-1/12/2023-32386)" notları yayım tarihi değil YÜRÜRLÜK
+      tarihini taşıyor. Tarih–sayı çifti kendi içinde tutarlı: 29/11/2023 sayısı 32384
+      olduğundan 1/12/2023 gerçekten 32386'dır. Ancak o gün bu tebliği değiştiren hiçbir
+      düzenleme yayımlanmamış; 1/12/2023 tarihli Resmî Gazete'nin tebliğler bölümünde
+      yalnızca TL mevduat dönüşümü, altın hesapları ve YUVAM tebliğleri var. Değişiklik
+      25/11/2023 tarihli ve 32380 sayılı Resmî Gazete'de "Finansal Tüketicilerden
+      Alınacak Ücretlere İlişkin Usûl ve Esaslar Hakkında Tebliğ (Sayı: 2020/7)'de
+      Değişiklik Yapılmasına Dair Tebliğ (Sayı: 2023/33)" adıyla yayımlanmış ve kendi
+      2. maddesi gereği 1/12/2023'te yürürlüğe girmiştir.
+    impact: >-
+      Nottaki tarihin içindekiler sayfası açılır (200 döner) ama ilgili başlık bulunamaz,
+      mükerrer sayı da 404 verir. Belirti "sayfa var, değişiklik yok" biçiminde görünür;
+      ağ hatasından veya desen hatasından ayırt edilmesi gerekir.
+    evidence:
+      - kaynak: Değişiklik tebliğinin kendisi (Resmî Gazete, 25/11/2023)
+        url: https://www.resmigazete.gov.tr/eskiler/2023/11/20231125-31.htm
+      - kaynak: >-
+          Tebliğ metninin yeniden yayımı (Alomaliye); 12. maddenin üçüncü fıkrasının
+          üçüncü cümlesi ile altıncı fıkrasının ikinci cümlesinin kaldırıldığını ve
+          yürürlüğün 1/12/2023 olduğunu gösteriyor
+        url: https://www.alomaliye.com/2023/11/25/finansal-tuketicilerden-alinacak-ucretlere-iliskin-usul-ve-esaslar-sayi-2023-33/
+      - kaynak: 29/11/2023 Resmî Gazete sayısının 32384 olduğu (sayı–tarih eşlemesi için)
+        url: https://www.ntv.com.tr/turkiye/resmi-gazetede-bugun-29-kasim-2023-tarihli-ve-32384-sayili-resmi-gazete,F54OL7mKwUmZ4v5MZzd2yA
+    workaround: >-
+      find_amendment_urls(..., geri_gun=N) nottaki tarihten geriye doğru tarar ve bulduğu
+      günün gerçek sayısını sayfanın başlığından düzeltir. Yürürlük tarihi yayımdan önce
+      olamayacağı için arama tek yönlüdür. Bkz. tests/test_rg_geri_tarama.py
+    checked: 2026-10-20

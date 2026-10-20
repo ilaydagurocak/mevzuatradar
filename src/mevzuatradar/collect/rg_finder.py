@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from urllib.parse import urljoin
 
@@ -88,9 +88,61 @@ def collect_refs(sources: list[str]) -> list[RGRef]:
     return sorted({r for s in sources if (r := parse_ref(s))})
 
 
+SAYI_INDEX_RE = re.compile(
+    r"Tarihli\s+ve\s+(?P<a>\d{5,6})\s+Sayılı|Sayı\s*:\s*(?P<b>\d{5,6})", re.I
+)
+
+
+def sayi_from_index(html: str) -> str | None:
+    """İçindekiler sayfasının başlığındaki Resmî Gazete sayısı.
+
+    Eski sayfalar 'Sayı : 32380', yeni sayfalar '... Tarihli ve 32999 Sayılı' biçimini
+    kullanır. En az beş hane istenir; aksi halde başlıklardaki 'Tebliğ (Sayı: 2023/33)'
+    gibi ifadeler sayı sanılır.
+    """
+    text = re.sub(r"\s+", " ", BeautifulSoup(html, "html.parser").get_text(" "))
+    m = SAYI_INDEX_RE.search(text)
+    return (m["a"] or m["b"]) if m else None
+
+
+def find_amendment_in_window(session: requests.Session, ref: RGRef, keyword: str | list[str],
+                             geri_gun: int = 45, delay: float = 3, timeout: int = 30,
+                             robots=None) -> tuple[tuple[RGRef, list[tuple[str, str]]] | None, int]:
+    """Nottaki tarihte bulunamayan değişikliği, o tarihten geriye doğru arar.
+
+    Bazı konsolide metinler değişiklik notuna yayım tarihi yerine yürürlük tarihini yazar.
+    Yürürlük tarihi yayımdan önce olamayacağı için arama yalnızca geriye doğrudur ve ilk
+    eşleşmede durur. (bulunan, istek_sayısı) döndürür; bulunan None olabilir.
+    """
+    from datetime import date, timedelta
+
+    from mevzuatradar.collect.polite import get_with_retry
+
+    gun = date(ref.year, ref.month, ref.day)
+    istek = 0
+    for i in range(1, geri_gun + 1):
+        g = gun - timedelta(days=i)
+        aday = RGRef(g.year, g.month, g.day, ref.sayi)
+        if robots is not None and not robots.allowed(aday.index_url):
+            continue
+        if delay:
+            time.sleep(delay)
+        istek += 1
+        try:
+            resp = get_with_retry(session, aday.index_url, timeout=timeout)
+        except requests.RequestException:
+            continue  # o gün sayfa yok (404) ya da geçici hata
+        html = _decode(resp)
+        links = find_links(html, aday.index_url, keyword)
+        if links:
+            return (replace(aday, sayi=sayi_from_index(html) or ref.sayi), links), istek
+    return None, istek
+
+
 def find_amendment_urls(session: requests.Session, refs: list[RGRef], keyword: str | list[str],
                         delay: float = 3, timeout: int = 30,
-                        robots=None) -> list[tuple[RGRef, list[tuple[str, str]], str | None]]:
+                        robots=None, mukerrer: int = 1,
+                        geri_gun: int = 0) -> list[tuple[RGRef, list[tuple[str, str]], str | None]]:
     """Her referans için (ref, bulunan bağlantılar, hata mesajı) döndürür.
     robots verilirse (RobotsChecker), izin verilmeyen sayfalar istenmez."""
     from mevzuatradar.collect.polite import get_with_retry
@@ -105,9 +157,34 @@ def find_amendment_urls(session: requests.Session, refs: list[RGRef], keyword: s
         requested += 1
         try:
             resp = get_with_retry(session, ref.index_url, timeout=timeout)
-            results.append((ref, find_links(_decode(resp), ref.index_url, keyword), None))
+            links = find_links(_decode(resp), ref.index_url, keyword)
         except requests.RequestException as exc:
             results.append((ref, [], str(exc)))
+            continue
+        # Asıl sayıda bulunamadıysa mükerrer sayılara bakılır: bazı değişiklikler orada yayımlanır.
+        if not links and mukerrer:
+            for k in range(1, mukerrer + 1):
+                alt = replace(ref, mukerrer=k)
+                if robots is not None and not robots.allowed(alt.index_url):
+                    continue
+                time.sleep(delay)
+                requested += 1
+                try:
+                    resp = get_with_retry(session, alt.index_url, timeout=timeout)
+                except requests.RequestException:
+                    continue
+                links = find_links(_decode(resp), alt.index_url, keyword)
+                if links:
+                    ref = alt
+                    break
+        # Hâlâ yoksa: not yayım tarihi değil yürürlük tarihi taşıyor olabilir.
+        if not links and geri_gun:
+            bulunan, ek = find_amendment_in_window(session, ref, keyword, geri_gun=geri_gun,
+                                                   delay=delay, timeout=timeout, robots=robots)
+            requested += ek
+            if bulunan:
+                ref, links = bulunan
+        results.append((ref, links, None))
     return results
 
 

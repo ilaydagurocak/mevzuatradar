@@ -54,16 +54,23 @@ INSERT_AFTER = re.compile(
     rf"(?:(?P<ford>{_ORD_ALT})\s+fıkrasından|\((?P<bent>[a-zçğıöşü]{{1,3}})\)\s+bendinden|"
     rf"(?P<mnum>{_MNUM})\s+maddesinden)\s+sonra\s+gelmek\s+üzere"
 )
+# Tebliğlerde ad ile çekim eki arasına sayı girer: "... Hakkında Tebliğ (Sayı: 2020/7)’nin"
+_SAYI_EKI = r"(?:\s*\((?:Sayı|Sıra\s*No)[^)]*\))?"
+# "Tebliğin" / "Tebliğ (Sayı: 2020/7)’nin" / "Tebliği (Sıra No: 5)’nin"
+_CEKIM = rf"(?:(?:in|e)\b|i?{_SAYI_EKI}\s*[’'`](?:n?in|n?ın|n?e|n?a)\b)"
+
 TARGET_REG = re.compile(
-    r"yayımlanan\s+(?P<name>.+?)\s*(?P<kind>Yönetmeli|Tebli)ğ(?:in|e)\b"
+    rf"yayımlanan\s+(?P<name>.+?)\s*(?P<kind>Yönetmeli|Tebli)ğ{_CEKIM}"
 )
-SAME_REG = re.compile(r"\bAynı\s+(?:Yönetmeli|Tebli)ğ(?:in|e)\b")
+SAME_REG = re.compile(rf"\bAynı\s+(?:Yönetmeli|Tebli)ğ{_CEKIM}")
 
 # --- Ekler (yönetmeliğe bağlı form/tablolar): "Ek-5", "EK-1/A", "EK-11-A", "EK-19’u" ---------
 _EK = r"(?:EK|Ek)-\d+(?:[-/][A-ZÇĞİÖŞÜ])?(?:[’']\w+)?"
 _EK_ID = re.compile(r"(?:EK|Ek)-(\d+(?:[-/][A-ZÇĞİÖŞÜ])?)")
 # Ekin İÇİNDEKİ bir yere yapılan değişiklik: "Ek-1’in 40 ıncı fıkrası", "EK-1’inin Birinci Bölümünün ..."
-EK_INTERNAL = re.compile(r"(?:EK|Ek)-(?P<ek>\d+(?:[-/][A-ZÇĞİÖŞÜ])?)[’'](?:in|inin|ın|ının|un|unun|ün|ünün)\b")
+EK_INTERNAL = re.compile(
+    r"(?:EK|Ek)-(?P<ek>\d+(?:[-/][A-ZÇĞİÖŞÜ])?)[’']"
+    r"(?:[sn]?[iıuü]n(?:in|ın|un|ün)?|[iıuü]nde|[iıuü]ndeki|[sn][iıuü]nde|[sn][iıuü]n)\b")
 
 # --- Operasyonlar -------------------------------------------------------------
 Q = "“([^”]*)”"
@@ -352,7 +359,7 @@ def extract_from_article(article_num: str, text: str, current_reg: str | None) -
     if (tm := TARGET_REG.search(text)):
         suffix = "Yönetmelik" if tm["kind"] == "Yönetmeli" else "Tebliğ"
         current_reg = f"{tm['name'].strip()} {suffix}"
-    elif not SAME_REG.search(text) and not re.search(r"(?:Yönetmeli|Tebli)ğ(?:in|e)\b", text):
+    elif not SAME_REG.search(text) and not re.search(rf"(?:Yönetmeli|Tebli)ğ{_CEKIM}", text):
         return [], current_reg
 
     lines = text.split("\n")

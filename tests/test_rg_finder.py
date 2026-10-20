@@ -74,3 +74,34 @@ def test_buyuk_harfli_yayimlanan_da_taninir():
     ref = original_ref(metin, "Suç Gelirlerinin Aklanmasının ve Terörün Finansmanının Önlenmesine İlişkin "
                               "Yükümlülüklere Uyum Programı Hakkında Yönetmelik")
     assert ref.label == "RG-16/9/2008-26999"
+
+
+def test_mukerrer_sayida_yayimlanan_degisiklik_bulunur():
+    """Asıl sayıda yoksa mükerrer sayıya bakılır (konsolide metnin not ettiği bazı değişiklikler orada)."""
+    from mevzuatradar.collect.rg_finder import find_amendment_urls, parse_ref
+
+    ref = parse_ref("RG-1/12/2023-32386")
+    asil = "https://www.resmigazete.gov.tr/eskiler/2023/12/20231201.htm"
+    mukerrer = "https://www.resmigazete.gov.tr/eskiler/2023/12/20231201M1.htm"
+    sayfalar = {
+        asil: "<a href='x.htm'>Alakasız Bir Yönetmelik</a>",
+        mukerrer: "<a href='20231201M1-5.htm'>Örnek Tebliğ (Sayı: 2020/7)’de Değişiklik Yapılmasına Dair Tebliğ</a>",
+    }
+
+    class SahteYanit:
+        def __init__(self, text):
+            self.text, self.status_code, self.content = text, 200, text.encode()
+            self.encoding = self.apparent_encoding = "utf-8"
+
+        def raise_for_status(self):
+            pass
+
+    class SahteSession:
+        def get(self, url, timeout=None, **kw):
+            return SahteYanit(sayfalar.get(url, "<html></html>"))
+
+    sonuc = find_amendment_urls(SahteSession(), [ref], "Örnek Tebliğ", delay=0)
+    bulunan_ref, linkler, hata = sonuc[0]
+    assert hata is None and len(linkler) == 1
+    assert linkler[0][1].endswith("20231201M1-5.htm")
+    assert bulunan_ref.mukerrer == 1

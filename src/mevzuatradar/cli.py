@@ -11,6 +11,7 @@
   mevzuatradar build-dataset
   mevzuatradar add-source --id bddk_x --name "..." --issuer BDDK --url "<mevzuat.gov.tr sayfa adresi>" --split train
   mevzuatradar find-amendments --all --write
+  mevzuatradar find-amendments --source X --write --geri-tara 45
   mevzuatradar export-seq2seq
   mevzuatradar evaluate-model --pred data/ml/preds_dev.jsonl --split dev
   mevzuatradar export-llm --split test --shots 10
@@ -70,9 +71,14 @@ def _find_amendments(args):
     session.headers["User-Agent"] = crawl.get("user_agent", "MevzuatRadar/0.1")
     robots = RobotsChecker(session, session.headers["User-Agent"], crawl.get("timeout_seconds", 30))
     results = find_amendment_urls(session, refs, keyword, crawl.get("delay_seconds", 3),
-                                  crawl.get("timeout_seconds", 30), robots=robots)
+                                  crawl.get("timeout_seconds", 30), robots=robots,
+                                  geri_gun=getattr(args, "geri_tara", 0))
     found = []
-    for ref, links, err in results:
+    # results, refs ile aynı sırada ve uzunlukta döner; dönen ref düzeltilmiş olabilir.
+    for istenen, (ref, links, err) in zip(refs, results):
+        if (ref.year, ref.month, ref.day) != (istenen.year, istenen.month, istenen.day):
+            print(f"[düzeltme] {istenen.label}: nottaki tarih yayım değil yürürlük tarihi "
+                  f"görünüyor; gerçek yayım {ref.label}")
         if err:
             print(f"[hata] {ref.label}: {err}")
         elif not links:
@@ -530,6 +536,9 @@ def main(argv=None):
     vf = sub.add_parser("verify"); vf.add_argument("--consolidated", required=True)
     vf.add_argument("--amendment", required=True); vf.add_argument("--show-diff", action="store_true")
     fa = sub.add_parser("find-amendments"); fa.add_argument("--source")
+    fa.add_argument("--geri-tara", type=int, default=0, metavar="GÜN",
+                   help="nottaki tarihte bulunamazsa geriye doğru kaç gün taransın; "
+                        "bazı konsolide metinler nota yayım yerine yürürlük tarihini yazar")
     fa.add_argument("--all", action="store_true", help="değişiklik listesi boş olan tüm kaynaklar")
     fa.add_argument("--config", default="configs/sources.yaml"); fa.add_argument("--raw-dir", default="data/raw")
     fa.add_argument("--write", action="store_true")

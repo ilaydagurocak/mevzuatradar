@@ -88,7 +88,12 @@ def compare_by_article(source: str, text: str, raw_dir: str = "data/raw",
 
     Bütün metni tek parça karşılaştırmak sıralama farklarına ve eklere (form/tablo) duyarlıdır;
     madde bazında karşılaştırma hangi maddede sorun olduğunu doğrudan gösterir.
+
+    Karşılaştırmadan önce iki taraf da dipnot aparatından arındırılır: konsolide metnin
+    sonundaki dipnotlar ve yayım tabloları düzenlemenin metni değildir, ama yapı
+    ayrıştırıcısı onları son maddenin içine katar.
     """
+    from mevzuatradar.parse.apparatus import strip_apparatus
     from mevzuatradar.parse.structure import parse_structure
 
     kons = glob.glob(f"{raw_dir}/{source}/konsolide_*")
@@ -107,7 +112,8 @@ def compare_by_article(source: str, text: str, raw_dir: str = "data/raw",
         elif r is None:
             out.append(MaddeDiff(key, None, "resmide_yok"))
         else:
-            oran = SequenceMatcher(None, _normalize(b.raw_text), _normalize(r.raw_text)).ratio()
+            oran = SequenceMatcher(None, _normalize(strip_apparatus(b.raw_text)),
+                                   _normalize(strip_apparatus(r.raw_text))).ratio()
             out.append(MaddeDiff(key, oran, "ayni" if oran >= esik else "farkli"))
     return out
 

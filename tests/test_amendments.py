@@ -274,3 +274,36 @@ def test_dogrudan_madde_ile_baslayan_metin():
     recs = extract_amendments(metin)
     assert [(r.operation, r.location.madde, r.old_text, r.new_text) for r in recs] == [
         ("IBARE_DEGISTIR", "3", "Kurum", "Kurul")]
+
+
+def test_teblig_adindaki_sayi_ekine_ragmen_hedef_taninir():
+    from mevzuatradar.extract.amendments import extract_amendments
+    metin = ("TEBLİĞDE DEĞİŞİKLİK\n"
+             "MADDE 1 – 29/8/2020 tarihli ve 31228 sayılı Resmî Gazete’de yayımlanan Finansal Tüketicilerden "
+             "Alınacak Ücretlere İlişkin Usûl ve Esaslar Hakkında Tebliğ (Sayı: 2020/7)’nin 4 üncü maddesinin "
+             "birinci fıkrasında yer alan “yüzde bir” ibaresi “yüzde iki” şeklinde değiştirilmiştir.\n"
+             "MADDE 2 – Aynı Tebliğin 6 ncı maddesinin ikinci fıkrası yürürlükten kaldırılmıştır.")
+    recs = extract_amendments(metin)
+    assert [(r.operation, r.location.madde, r.old_text, r.new_text) for r in recs] == [
+        ("IBARE_DEGISTIR", "4", "yüzde bir", "yüzde iki"),
+        ("BIRIM_KALDIR", "6", None, None)]
+    assert recs[0].target_regulation.endswith("Tebliğ")     # hedef düzenleme adı yakalandı
+
+
+def test_teblig_sira_no_bicimi():
+    from mevzuatradar.extract.amendments import extract_amendments
+    metin = ("BAŞLIK\nMADDE 1 – 9/4/2008 tarihli ve 26842 sayılı Resmî Gazete’de yayımlanan Mali Suçları "
+             "Araştırma Kurulu Genel Tebliği (Sıra No: 5)’nin 3 üncü maddesinde yer alan “Kurum” ibaresi "
+             "“Kurul” şeklinde değiştirilmiştir.")
+    recs = extract_amendments(metin)
+    assert [(r.operation, r.location.madde, r.new_text) for r in recs] == [("IBARE_DEGISTIR", "3", "Kurul")]
+
+
+def test_ek_icinde_ibare_ekleme_kapsam_disi_isaretlenir():
+    from mevzuatradar.extract.amendments import extract_amendments
+    metin = ("TEBLİĞDE DEĞİŞİKLİK\nMADDE 3 – Aynı Tebliğin Ek-1’inde yer alan “3.3. Uluslararası Fon "
+             "Transferi ve Mesajlaşma Ücreti” ibaresinden sonra gelmek üzere “3.4. FAST Ücreti” ibaresi "
+             "eklenmiştir.")
+    recs = extract_amendments(metin)
+    assert [(r.operation, r.location.madde_type, r.location.madde) for r in recs] == [
+        ("IBARE_EKLE", "ek_belge", "EK-1")]

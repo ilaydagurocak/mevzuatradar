@@ -196,6 +196,20 @@ sources:
   - https://www.resmigazete.gov.tr/eskiler/2022/05/20220524-7.htm
   original_url: https://www.resmigazete.gov.tr/eskiler/2013/12/20131224-8.htm
   original_ref: RG-24/12/2013-28861
+- id: tcmb_ft_ucret_teblig
+  name: 'Finansal Tüketicilerden Alınacak Ücretlere İlişkin Usûl ve Esaslar Hakkında Tebliğ (Sayı: 2020/7)'
+  issuer: TCMB
+  url: https://www.mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?MevzuatTur=9&MevzuatNo=34343&MevzuatTertip=5
+  former_names:
+  - 'Finansal Tüketicilerden Alınacak Ücretlere İlişkin Usul ve Esaslar Hakkında Tebliğ (Sayı: 2020/7)'
+  amendments:
+  - https://www.resmigazete.gov.tr/eskiler/2020/12/20201231-12.htm
+  - https://www.resmigazete.gov.tr/eskiler/2021/08/20210809-7.htm
+  - https://www.resmigazete.gov.tr/eskiler/2021/11/20211113-17.htm
+  - https://www.resmigazete.gov.tr/eskiler/2023/12/20231222-3.htm
+  - https://www.resmigazete.gov.tr/eskiler/2023/11/20231125-31.htm
+  original_url: https://www.resmigazete.gov.tr/eskiler/2020/03/20200307-9.htm
+  original_ref: RG-7/3/2020-31061
 crawl:
   delay_seconds: 3
   user_agent: MevzuatRadar/0.1 (egitim amacli portfoy projesi)
