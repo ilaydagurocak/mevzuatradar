@@ -67,6 +67,37 @@ def _bent_span(lines: list[str], span: tuple[int, int], bent: str) -> tuple[int,
     return None
 
 
+# Türk mevzuatında bent harflerinin sırası (q, w, x kullanılmaz).
+BENT_ALFABESI = ["a", "b", "c", "ç", "d", "e", "f", "g", "ğ", "h", "ı", "i", "j", "k", "l",
+                 "m", "n", "o", "ö", "p", "r", "s", "ş", "t", "u", "ü", "v", "y", "z"]
+
+
+def _sonraki_bent_harfi(harf: str) -> str | None:
+    """(d) -> (e). Çok harfli bentlerde taban harf kaydırılır: (aa) -> (bb).
+
+    Alfabe tükenirse None döner ve bent olduğu gibi bırakılır; uydurulmuş bir harf
+    yazmak, kaydırmayı hiç yapmamaktan daha kötüdür.
+    """
+    try:
+        yeni = BENT_ALFABESI[BENT_ALFABESI.index(harf[0]) + 1]
+    except (ValueError, IndexError):
+        return None
+    return yeni * len(harf)
+
+
+def _bent_teselsul(lines: list[str], baslangic: int, bitis: int) -> None:
+    """[baslangic, bitis) aralığındaki bentleri bir harf ileri kaydırır (yerinde)."""
+    for i in range(baslangic, min(bitis, len(lines))):
+        govde = lines[i].lstrip()
+        if not (m := BENT_RE.match(govde)):
+            continue
+        harf = m["letter"]
+        if (yeni_harf := _sonraki_bent_harfi(harf)) is None:
+            continue
+        bosluk = lines[i][: len(lines[i]) - len(govde)]
+        lines[i] = bosluk + yeni_harf + ")" + govde[len(harf) + 1:]
+
+
 def _icerik_sonu(lines: list[str], bas: int, son: int) -> int:
     """Maddenin içeriğinin gerçekten bittiği satır.
 
@@ -150,7 +181,10 @@ def _cumleler(blok: str) -> list[str]:
 
 
 def _strip_marker(text: str) -> str:
-    """Yeni metnin başındaki fıkra/bent işaretini korur ama karşılaştırmada gerekmez."""
+    """Yeni metnin baş/son boşluklarını alır; fıkra/bent işareti KORUNUR.
+
+    Eklenen bendin harfi bu metinden gelir, o yüzden işaret silinmez.
+    """
     return text.strip()
 
 
@@ -280,12 +314,17 @@ def apply_record(text: str, rec: dict) -> tuple[str, ApplyResult]:
             if metin != text:                      # bir kısmı değiştirildi, kalanlar eklenecek
                 return apply_record(metin, {**rec, "new_text": "\n".join(kalan)})
         son = _icerik_sonu(lines, bas, son)
+        kapsam_son = son          # teselsül, kapsamın gerçek sonunu ister
         if (sonra := rec.get("insert_after")):                       # "(d) bendinden sonra gelmek üzere"
             alt = _bent_span(lines, (bas, son), str(sonra)) or _fikra_span(lines, (bas, son), int(sonra)) \
                 if str(sonra).isdigit() else _bent_span(lines, (bas, son), str(sonra))
             if alt:
                 son = alt[1]
-        return "\n".join(lines[:son] + yeni.split("\n") + lines[son:]), ApplyResult("uygulandi")
+        eklenen = yeni.split("\n")
+        lines = lines[:son] + eklenen + lines[son:]
+        if unit == "bent":          # "diğer bentler buna göre teselsül ettirilmiştir"
+            _bent_teselsul(lines, son + len(eklenen), kapsam_son + len(eklenen))
+        return "\n".join(lines), ApplyResult("uygulandi")
 
     if op == "BASLIK_DEGISTIR":
         if span is None:
